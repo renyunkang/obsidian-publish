@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: layer-openelb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: layer-openelb
+  template:
+    metadata:
+      labels:
+        app: layer-openelb
+    spec:
+      containers:
+        - image: rykren/kubia
+          name: kubia
+          ports:
+            - containerPort: 8080
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: layer-svc
+  annotations:
+    lb.kubesphere.io/v1alpha1: openelb
+    protocol.openelb.kubesphere.io/v1alpha1: layer2
+    eip.openelb.kubesphere.io/v1alpha2: layer-eip
+spec:
+  selector:
+    app: layer-openelb
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  externalTrafficPolicy: Cluster
