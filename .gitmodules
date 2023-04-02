@@ -1,4 +1,4 @@
+
 [submodule "content"]
 	path = content
-	url = https://github.com/renyunkang/noteData.git
-	branch = share
+	url = https://github.com/renyunkang/data.git
