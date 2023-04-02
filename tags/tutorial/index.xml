@@ -3,4 +3,5 @@ Atlas意思是地图集。
 单个案例或项目的MOC，考虑直接放在对应文件夹里面，相当于起到一个个文件夹的readme和导览的作用。这里专门放这些MOC的MOC。
 围绕本库和obsidian的使用教程、方法和细节，也放到这里，就像是地图的指南针。</description></item><item><title>About Extras</title><link>https://ob.tianzhongs.ml/About-Extras/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://ob.tianzhongs.ml/About-Extras/</guid><description>up:: [[ACCESS 笔记组织法]]
 [[图片保存：图床or本地]]</description></item><item><title>AboutTheGarden</title><link>https://ob.tianzhongs.ml/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://ob.tianzhongs.ml/</guid><description>hello👋，我是 rykren
-[[test]]</description></item></channel></rss>
+[[test]]
+cni 调研 测试 ping包：apt-get install inetutils-ping</description></item></channel></rss>
