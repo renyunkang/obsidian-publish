@@ -172,6 +172,7 @@ PRIO：分类优先算法 (从左至右优先发包), 队列规定并不进行�
 博客搭建
 OneNote 迁移 + 导出 pdf/html + pdf 转 html + 博客
 笔记迁移 - onenote + 语雀</description></item><item><title/><link>https://renyunkang.tk/TODO/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://renyunkang.tk/TODO/</guid><description>#todo
+建信金科 openelb
 cni 调研
 阿里 - hybridnet - CNStack 网络插件：hybridnet 的设计与实现 daocloud - spiderpool SpiderPool - 云原生容器网络 IPAM 插件 calico 整体的流程 + iptables 数据面 1.</description></item><item><title/><link>https://renyunkang.tk/use-kube-ovn/</link><pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate><guid>https://renyunkang.tk/use-kube-ovn/</guid><description>#kube-ovn #cni #how-to-use
 核心资源 subnet
