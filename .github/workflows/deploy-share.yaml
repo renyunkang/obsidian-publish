@@ -1,9 +1,9 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages for share
 
 on:
   push:
     branches:
-      - hugo
+      - share-hugo
 
   workflow_dispatch:
 
@@ -48,5 +48,5 @@ jobs:
         with:
           github_token: ${{ secrets.TOKEN }}
           publish_dir: ./public
-          publish_branch: master
-          cname: ryken.cloud
+          publish_branch: share-master
+          cname: renyunkang.tk
