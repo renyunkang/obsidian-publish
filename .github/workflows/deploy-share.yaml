@@ -49,4 +49,4 @@ jobs:
           github_token: ${{ secrets.TOKEN }}
           publish_dir: ./public
           publish_branch: share-master
-          cname: renyunkang.tk
+          cname: share.ryken.cloud
