@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>FrequentlyUsed, shell on</title><link>https://www.ryken.cloud/tags/FrequentlyUsed-shell/</link><description>Recent content in FrequentlyUsed, shell on</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Mon, 10 Apr 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ryken.cloud/tags/FrequentlyUsed-shell/index.xml" rel="self" type="application/rss+xml"/><item><title>shell 常用</title><link>https://www.ryken.cloud/shell-%E5%B8%B8%E7%94%A8/</link><pubDate>Mon, 10 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/shell-%E5%B8%B8%E7%94%A8/</guid><description>#shell
-移动光标 ctrl+a**: 移到行首（a是首字母）**
-ctrl+e**: 移到行尾（end）**
-ctrl+b: 前移一个字符(backward)
-ctrl+f: 后移一个字符(forward)
-alt+b: 前移一个单词</description></item></channel></rss>
