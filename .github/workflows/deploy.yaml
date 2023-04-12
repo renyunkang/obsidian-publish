@@ -18,7 +18,9 @@ jobs:
       - name: Checkout submodules
         run: git submodule update --init --recursive
 
-      # content 
+      - name: clean
+        run: rm -r content/Templates content/TmpFiles content/WeeklySummary content/WorkNotes content/Private
+
       - name: config1 
         run: mv content/*.md content/.obsidian/ && find content/ -name "*.md" | xargs -I file  mv -f file content &&  mv content/AboutTheGarden.md content/_index.md 
 
