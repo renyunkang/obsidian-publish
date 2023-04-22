@@ -1,4 +1,4 @@
-name: tianzhongs  #自己配置
+name: ryken
 enableToc: true
 openToc: false
 enableLinkPreview: true
@@ -11,13 +11,13 @@ enableFooter: true
 enableContextualBacklinks: true
 enableRecentNotes: false
 enableGitHubEdit: false
-GitHubLink: https://github.com/tianzhongs/ObZhishiku/tree/hugo/content
+GitHubLink: https://github.com/renyunkang
 enableSemanticSearch: false
 operandApiKey: "REPLACE-WITH-YOUR-OPERAND-API-KEY"
 description:
-  😊tianzhongs的Obsidian在线🌸知识花园🌸
+  😊ryken的Obsidian在线🌸知识花园🌸
 page_title:
-  "🌿知识花园🌸"
-links:   #以下部分自己设置
+  "🐯🌸Knowledge Garden🌸🐯"
+links:
   - link_name: Email  
-    link: tianzhongs@foxmail.com
+    link: rykren1998@gmail.com
