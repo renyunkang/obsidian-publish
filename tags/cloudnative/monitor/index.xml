@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>cloudnative/monitor on</title><link>https://www.ryken.cloud/tags/cloudnative/monitor/</link><description>Recent content in cloudnative/monitor on</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><atom:link href="https://www.ryken.cloud/tags/cloudnative/monitor/index.xml" rel="self" type="application/rss+xml"/><item><title>Prometheus Blockbox Exporter</title><link>https://www.ryken.cloud/Prometheus-Blockbox-Exporter/</link><pubDate>Tue, 25 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/Prometheus-Blockbox-Exporter/</guid><description>Blackbox Exporter 是 Prometheus 社区提供的 官方黑盒监控解决方案,其允许用户通过: http\HTTPS\DNS\TCP\ICMP\gRPC的方式对网络进行探测.
+安装部署
+docker 安装
+1 docker run --rm -p 9115:9115 --name blackbox_exporter -v $(pwd):/config quay.</description></item></channel></rss>
