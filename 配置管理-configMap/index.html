@@ -1,0 +1,659 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="从Kubernetes 1.2开始提供了一种统一的应用配置管理方案—ConfigMap。ConfigMap以一个或多个key:value的形式保存在Kubernetes系统中供应用使用，既可以用于表示一个变量的值（例如apploglevel=info），也可以用于表示一个完整配置文件的内容。
+configMap的使用场景  生成为容器内的环境变量。 设置容器启动命令的启动参数（需设置为环境变量）。 以Volume的形式挂载为容器内部的文件或目录。  创建configMap kubectl通过yaml配置文件创建 kubectl create -f cm-appvars.yaml
+ 将应用所需要的变量定义为configMap 将配置文件定义为configmap  1 2 3 4 5 6 7  apiVersion:v1kind:ConfigMapmetadata:name:cm-appvarsdata:apploglevel:infoappdatadir:/var/data  1 2 3 4 5 6 7 8 9 10 11 12 13 14  apiVersion:v1kind:ConfigMapmetadata:name:cm-appconfigfilesdata:key-serverxml:|<?"><title>Knowledge Garden</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.f179b78f8b86a518e2d6f74951af8c85.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.0b4276feac02724802a9961b0440b73d.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>最近编辑于
+May 5, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><ol><li><a href=#configmap的使用场景>configMap的使用场景</a></li><li><a href=#创建configmap>创建configMap</a></li><li><a href=#使用kubectl创建>使用kubectl创建</a></li><li><a href=#pod使用configmap>pod使用configMap</a></li><li><a href=#使用configmap的限制条件>使用configMap的限制条件</a></li></ol></li></ol></nav></details></aside><p>从Kubernetes 1.2开始提供了一种统一的应用配置管理方案—ConfigMap。ConfigMap以一个或多个key:value的形式保存在Kubernetes系统中供应用使用，既可以用于表示一个变量的值（例如apploglevel=info），也可以用于表示一个完整配置文件的内容。</p><a href=#configmap的使用场景><h3 id=configmap的使用场景><span class=hanchor arialabel=Anchor># </span>configMap的使用场景</h3></a><ol><li>生成为容器内的环境变量。</li><li>设置容器启动命令的启动参数（需设置为环境变量）。</li><li>以Volume的形式挂载为容器内部的文件或目录。</li></ol><a href=#创建configmap><h3 id=创建configmap><span class=hanchor arialabel=Anchor># </span>创建configMap</h3></a><p>kubectl通过yaml配置文件创建 <code>kubectl create -f cm-appvars.yaml</code></p><ol><li>将应用所需要的变量定义为configMap</li><li>将配置文件定义为configmap</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-appvars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>apploglevel</span><span class=p>:</span><span class=w> </span><span class=l>info</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>appdatadir</span><span class=p>:</span><span class=w> </span><span class=l>/var/data</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-appconfigfiles</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>key-serverxml</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>    &lt;?xml version=&#34;1.0&#34; encoding=&#34;ISO-8859-1&#34;?&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>    &lt;!--  Copyright w3school.com.cn --&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>      &lt;note&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>              &lt;to&gt;George&lt;/to&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>              &lt;from&gt;John&lt;/from&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>              &lt;heading&gt;Reminder&lt;/heading&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>              &lt;body&gt;Don&#39;t forget the meeting!&lt;/body&gt;
+</span></span></span><span class=line><span class=cl><span class=sd>      &lt;/note&gt;</span><span class=w>    
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl create -f app-config-map-vars.yaml </span>
+</span></span><span class=line><span class=cl><span class=n>pod</span><span class=p>/</span><span class=nb>cm-var</span><span class=n>-pod</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get cm</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>               <span class=n>DATA</span>   <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appvars</span>         <span class=n>2</span>      <span class=n>34s</span>
+</span></span><span class=line><span class=cl><span class=nb>kube-root</span><span class=n>-ca</span><span class=p>.</span><span class=n>crt</span>   <span class=n>1</span>      <span class=n>8d</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl describe cm cm-appvars</span>
+</span></span><span class=line><span class=cl><span class=n>Name</span><span class=err>:</span>         <span class=nb>cm-appvars</span>
+</span></span><span class=line><span class=cl><span class=n>Namespace</span><span class=err>:</span>    <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>Labels</span><span class=err>:</span>       <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=n>Annotations</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Data</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl><span class=n>appdatadir</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=p>/</span><span class=n>var</span><span class=p>/</span><span class=n>data</span>
+</span></span><span class=line><span class=cl><span class=n>apploglevel</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=n>info</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>BinaryData</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Events</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl create -f config-map-file.yaml </span>
+</span></span><span class=line><span class=cl><span class=n>configmap</span><span class=p>/</span><span class=nb>cm-appconfigfiles</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get cmNAME                DATA   AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appconfigfiles</span>   <span class=n>1</span>      <span class=n>3s</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appvars</span>          <span class=n>2</span>      <span class=n>73m</span>
+</span></span><span class=line><span class=cl><span class=nb>kube-root</span><span class=n>-ca</span><span class=p>.</span><span class=n>crt</span>    <span class=n>1</span>      <span class=n>8d</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl describe cm cm-appconfigfiles</span>
+</span></span><span class=line><span class=cl><span class=n>Name</span><span class=err>:</span>         <span class=nb>cm-appconfigfiles</span>
+</span></span><span class=line><span class=cl><span class=n>Namespace</span><span class=err>:</span>    <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>Labels</span><span class=err>:</span>       <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=n>Annotations</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Data</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl><span class=nb>key-serverxml</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=k>?</span><span class=n>xml</span> <span class=n>version</span><span class=p>=</span><span class=s2>&#34;1.0&#34;</span> <span class=n>encoding</span><span class=p>=</span><span class=s2>&#34;ISO-8859-1&#34;</span><span class=p>?&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;!--</span>  <span class=n>Copyright</span> <span class=n>w3school</span><span class=p>.</span><span class=n>com</span><span class=p>.</span><span class=n>cn</span> <span class=p>--&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>to</span><span class=p>&gt;</span><span class=n>George</span><span class=p>&lt;/</span><span class=n>to</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>from</span><span class=p>&gt;</span><span class=n>John</span><span class=p>&lt;/</span><span class=n>from</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>heading</span><span class=p>&gt;</span><span class=n>Reminder</span><span class=p>&lt;/</span><span class=n>heading</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>body</span><span class=p>&gt;</span><span class=n>Don</span><span class=err>&#39;</span><span class=n>t</span> <span class=n>forget</span> <span class=n>the</span> <span class=n>meeting</span><span class=p>!&lt;/</span><span class=n>body</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>BinaryData</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Events</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#使用kubectl创建><h3 id=使用kubectl创建><span class=hanchor arialabel=Anchor># </span>使用kubectl创建</h3></a><p>使用参数&ndash;from-file或&ndash;from-literal指定内容，并且可以在一行命令中指定多个参数。</p><ol><li>通过&ndash;from-file参数从文件中进行创建，可以指定key的名称，也可以在一个命令行中创建包含多个key的ConfigMap。</li></ol><p><code>kubectl create configmap cm-server.xml --from-file=server.xml</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl create configmap cm-server.xml --from-file=../xml/simple.xml</span>
+</span></span><span class=line><span class=cl><span class=n>configmap</span><span class=p>/</span><span class=nb>cm-server</span><span class=p>.</span><span class=n>xml</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get cm</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                <span class=n>DATA</span>   <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-server</span><span class=p>.</span><span class=n>xml</span>       <span class=n>1</span>      <span class=n>9s</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl describe cm cm-server.xml</span>
+</span></span><span class=line><span class=cl><span class=n>Name</span><span class=err>:</span>         <span class=nb>cm-server</span><span class=p>.</span><span class=n>xml</span>
+</span></span><span class=line><span class=cl><span class=n>Namespace</span><span class=err>:</span>    <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>Labels</span><span class=err>:</span>       <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=n>Annotations</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Data</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl><span class=n>simple</span><span class=p>.</span><span class=n>xml</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=k>?</span><span class=n>xml</span> <span class=n>version</span><span class=p>=</span><span class=s2>&#34;1.0&#34;</span> <span class=n>encoding</span><span class=p>=</span><span class=s2>&#34;ISO-8859-1&#34;</span><span class=p>?&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;!--</span> <span class=n>Edited</span> <span class=n>with</span> <span class=n>XML</span> <span class=n>Spy</span> <span class=n>v2007</span> <span class=p>(</span><span class=n>http</span><span class=err>:</span><span class=p>//</span><span class=n>www</span><span class=p>.</span><span class=n>altova</span><span class=p>.</span><span class=n>com</span><span class=p>)</span> <span class=p>--&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=n>breakfast_menu</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>Belgian</span> <span class=n>Waffles</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$5</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>two</span> <span class=n>of</span> <span class=n>our</span> <span class=n>famous</span> <span class=n>Belgian</span> <span class=n>Waffles</span> <span class=n>with</span> <span class=n>plenty</span> <span class=n>of</span> <span class=n>real</span> <span class=n>maple</span> <span class=n>syrup</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>650</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>Strawberry</span> <span class=n>Belgian</span> <span class=n>Waffles</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$7</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>light</span> <span class=n>Belgian</span> <span class=n>waffles</span> <span class=n>covered</span> <span class=n>with</span> <span class=n>strawberries</span> <span class=n>and</span> <span class=n>whipped</span> <span class=n>cream</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>900</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=nb>Berry-Berry</span> <span class=n>Belgian</span> <span class=n>Waffles</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$8</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>light</span> <span class=n>Belgian</span> <span class=n>waffles</span> <span class=n>covered</span> <span class=n>with</span> <span class=n>an</span> <span class=n>assortment</span> <span class=n>of</span> <span class=n>fresh</span> <span class=n>berries</span> <span class=n>and</span> <span class=n>whipped</span> <span class=n>cream</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>900</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>French</span> <span class=n>Toast</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$4</span><span class=p>.</span><span class=n>50</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>thick</span> <span class=n>slices</span> <span class=n>made</span> <span class=n>from</span> <span class=n>our</span> <span class=n>homemade</span> <span class=n>sourdough</span> <span class=n>bread</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>600</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>Homestyle</span> <span class=n>Breakfast</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$6</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>two</span> <span class=n>eggs</span><span class=p>,</span> <span class=n>bacon</span> <span class=n>or</span> <span class=n>sausage</span><span class=p>,</span> <span class=n>toast</span><span class=p>,</span> <span class=n>and</span> <span class=n>our</span> <span class=nb>ever-popular</span> <span class=n>hash</span> <span class=n>browns</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>950</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=n>breakfast_menu</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>BinaryData</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Events</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><ol start=2><li>通过&ndash;from-file参数从目录中进行创建，该目录下的每个配置文件名都被设置为key，文件的内容被设置为value。</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl create configmap cm-apptest --from-file=../xml</span>
+</span></span><span class=line><span class=cl><span class=n>configmap</span><span class=p>/</span><span class=nb>cm-apptest</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get cm</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                <span class=n>DATA</span>   <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appconfigfiles</span>   <span class=n>1</span>      <span class=n>52m</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-apptest</span>          <span class=n>2</span>      <span class=n>8s</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appvars</span>          <span class=n>2</span>      <span class=n>126m</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-server</span><span class=p>.</span><span class=n>xml</span>       <span class=n>1</span>      <span class=n>3m4s</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl describe cm cm-apptest</span>
+</span></span><span class=line><span class=cl><span class=n>Name</span><span class=err>:</span>         <span class=nb>cm-apptest</span>
+</span></span><span class=line><span class=cl><span class=n>Namespace</span><span class=err>:</span>    <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>Labels</span><span class=err>:</span>       <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=n>Annotations</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Data</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl><span class=n>note</span><span class=p>.</span><span class=n>xml</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=k>?</span><span class=n>xml</span> <span class=n>version</span><span class=p>=</span><span class=s2>&#34;1.0&#34;</span> <span class=n>encoding</span><span class=p>=</span><span class=s2>&#34;ISO-8859-1&#34;</span><span class=p>?&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;!--</span>  <span class=n>Copyright</span> <span class=n>w3school</span><span class=p>.</span><span class=n>com</span><span class=p>.</span><span class=n>cn</span> <span class=p>--&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>to</span><span class=p>&gt;</span><span class=n>George</span><span class=p>&lt;/</span><span class=n>to</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>from</span><span class=p>&gt;</span><span class=n>John</span><span class=p>&lt;/</span><span class=n>from</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>heading</span><span class=p>&gt;</span><span class=n>Reminder</span><span class=p>&lt;/</span><span class=n>heading</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>body</span><span class=p>&gt;</span><span class=n>Don</span><span class=err>&#39;</span><span class=n>t</span> <span class=n>forget</span> <span class=n>the</span> <span class=n>meeting</span><span class=p>!&lt;/</span><span class=n>body</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=n>note</span><span class=p>&gt;</span> 
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>simple</span><span class=p>.</span><span class=n>xml</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=k>?</span><span class=n>xml</span> <span class=n>version</span><span class=p>=</span><span class=s2>&#34;1.0&#34;</span> <span class=n>encoding</span><span class=p>=</span><span class=s2>&#34;ISO-8859-1&#34;</span><span class=p>?&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;!--</span> <span class=n>Edited</span> <span class=n>with</span> <span class=n>XML</span> <span class=n>Spy</span> <span class=n>v2007</span> <span class=p>(</span><span class=n>http</span><span class=err>:</span><span class=p>//</span><span class=n>www</span><span class=p>.</span><span class=n>altova</span><span class=p>.</span><span class=n>com</span><span class=p>)</span> <span class=p>--&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=n>breakfast_menu</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>Belgian</span> <span class=n>Waffles</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$5</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>two</span> <span class=n>of</span> <span class=n>our</span> <span class=n>famous</span> <span class=n>Belgian</span> <span class=n>Waffles</span> <span class=n>with</span> <span class=n>plenty</span> <span class=n>of</span> <span class=n>real</span> <span class=n>maple</span> <span class=n>syrup</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>650</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>Strawberry</span> <span class=n>Belgian</span> <span class=n>Waffles</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$7</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>light</span> <span class=n>Belgian</span> <span class=n>waffles</span> <span class=n>covered</span> <span class=n>with</span> <span class=n>strawberries</span> <span class=n>and</span> <span class=n>whipped</span> <span class=n>cream</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>900</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=nb>Berry-Berry</span> <span class=n>Belgian</span> <span class=n>Waffles</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$8</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>light</span> <span class=n>Belgian</span> <span class=n>waffles</span> <span class=n>covered</span> <span class=n>with</span> <span class=n>an</span> <span class=n>assortment</span> <span class=n>of</span> <span class=n>fresh</span> <span class=n>berries</span> <span class=n>and</span> <span class=n>whipped</span> <span class=n>cream</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>900</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>French</span> <span class=n>Toast</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$4</span><span class=p>.</span><span class=n>50</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>thick</span> <span class=n>slices</span> <span class=n>made</span> <span class=n>from</span> <span class=n>our</span> <span class=n>homemade</span> <span class=n>sourdough</span> <span class=n>bread</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>600</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>name</span><span class=p>&gt;</span><span class=n>Homestyle</span> <span class=n>Breakfast</span><span class=p>&lt;/</span><span class=n>name</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>price</span><span class=p>&gt;</span><span class=nv>$6</span><span class=p>.</span><span class=n>95</span><span class=p>&lt;/</span><span class=n>price</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>description</span><span class=p>&gt;</span><span class=n>two</span> <span class=n>eggs</span><span class=p>,</span> <span class=n>bacon</span> <span class=n>or</span> <span class=n>sausage</span><span class=p>,</span> <span class=n>toast</span><span class=p>,</span> <span class=n>and</span> <span class=n>our</span> <span class=nb>ever-popular</span> <span class=n>hash</span> <span class=n>browns</span><span class=p>&lt;/</span><span class=n>description</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>&lt;</span><span class=n>calories</span><span class=p>&gt;</span><span class=n>950</span><span class=p>&lt;/</span><span class=n>calories</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>food</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=n>breakfast_menu</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>BinaryData</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Events</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><ol start=3><li>使用&ndash;from-literal时会从文本中进行创建，直接将指定的key#=value#创建为ConfigMap的内容。</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl create configmap cm-appenv --from-literal=loglevel=info --from-literal=appdatadir=/var/data</span>
+</span></span><span class=line><span class=cl><span class=n>configmap</span><span class=p>/</span><span class=nb>cm-appenv</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get cm</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                <span class=n>DATA</span>   <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appconfigfiles</span>   <span class=n>1</span>      <span class=n>59m</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-appenv</span>           <span class=n>2</span>      <span class=n>9s</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl describe cm cm-appenv</span>
+</span></span><span class=line><span class=cl><span class=n>Name</span><span class=err>:</span>         <span class=nb>cm-appenv</span>
+</span></span><span class=line><span class=cl><span class=n>Namespace</span><span class=err>:</span>    <span class=k>default</span>
+</span></span><span class=line><span class=cl><span class=n>Labels</span><span class=err>:</span>       <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=n>Annotations</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Data</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl><span class=n>appdatadir</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=p>/</span><span class=n>var</span><span class=p>/</span><span class=n>data</span>
+</span></span><span class=line><span class=cl><span class=n>loglevel</span><span class=err>:</span>
+</span></span><span class=line><span class=cl><span class=p>----</span>
+</span></span><span class=line><span class=cl><span class=n>info</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>BinaryData</span>
+</span></span><span class=line><span class=cl><span class=p>====</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Events</span><span class=err>:</span>  <span class=p>&lt;</span><span class=n>none</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#pod使用configmap><h3 id=pod使用configmap><span class=hanchor arialabel=Anchor># </span>pod使用configMap</h3></a><a href=#通过环境变量使用><h4 id=通过环境变量使用><span class=hanchor arialabel=Anchor># </span>通过环境变量使用</h4></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-var-pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>busybox</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;env | grep APP&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>env</span><span class=p>:</span><span class=w> 
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>APP_LOG_LEVEL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>valueFrom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>configMapKeyRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-appvars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>apploglevel</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>APP_DATA_DIR</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>valueFrom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>configMapKeyRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-appvars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>appdatadir</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get pods</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                     <span class=n>READY</span>   <span class=n>STATUS</span>             <span class=n>RESTARTS</span>       <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-var</span><span class=n>-pod</span>               <span class=n>0</span><span class=p>/</span><span class=n>1</span>     <span class=n>CrashLoopBackOff</span>   <span class=n>3</span> <span class=p>(</span><span class=n>46s</span> <span class=n>ago</span><span class=p>)</span>    <span class=n>110s</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl logs cm-var-pod</span>
+</span></span><span class=line><span class=cl><span class=n>APP_DATA_DIR</span><span class=p>=/</span><span class=n>var</span><span class=p>/</span><span class=n>data</span>
+</span></span><span class=line><span class=cl><span class=n>APP_LOG_LEVEL</span><span class=p>=</span><span class=n>info</span>
+</span></span></code></pre></td></tr></table></div></div><p>Kubernetes从1.6版本开始，引入了一个新的字段envFrom，实现了在Pod环境中将ConfigMap（也可用于Secret资源对象）中所有定义的key=value自动生成为环境变量。需要说明的是，环境变量的名称受POSIX命名规范（[a-zA-Z_][a-zA-Z0-9_]*）约束，不能以数字开头。如果包含非法字符，则系统将跳过该条环境变量的创建，并记录一个Event来提示环境变量无法生成，但并不阻止Pod的启动。</p><a href=#通过挂载文件使用><h4 id=通过挂载文件使用><span class=hanchor arialabel=Anchor># </span>通过挂载文件使用</h4></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-file-pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kubeguide/tomcat-app:v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>serverxml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/configfiles</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>serverxml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>configMap</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cm-appconfigfiles</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>items</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>key-serverxml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>server.xml</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl create -f app-config-map-file.yaml </span>
+</span></span><span class=line><span class=cl><span class=n>pod</span><span class=p>/</span><span class=nb>cm-file</span><span class=n>-pod</span> <span class=n>created</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl get pod</span>
+</span></span><span class=line><span class=cl><span class=n>NAME</span>                     <span class=n>READY</span>   <span class=n>STATUS</span>             <span class=n>RESTARTS</span>         <span class=n>AGE</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-file</span><span class=n>-pod</span>              <span class=n>1</span><span class=p>/</span><span class=n>1</span>     <span class=n>Running</span>            <span class=n>0</span>                <span class=n>64s</span>
+</span></span><span class=line><span class=cl><span class=nb>cm-var</span><span class=n>-pod</span>               <span class=n>0</span><span class=p>/</span><span class=n>1</span>     <span class=n>CrashLoopBackOff</span>   <span class=n>14</span> <span class=p>(</span><span class=n>4m8s</span> <span class=n>ago</span><span class=p>)</span>    <span class=n>51m</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>~</span> <span class=c># kubectl exec -it cm-file-pod bash</span>
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=n>usr</span><span class=p>/</span><span class=n>local</span><span class=p>/</span><span class=n>tomcat</span><span class=c># pwd</span>
+</span></span><span class=line><span class=cl><span class=p>/</span><span class=n>usr</span><span class=p>/</span><span class=n>local</span><span class=p>/</span><span class=n>tomcat</span>
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=n>usr</span><span class=p>/</span><span class=n>local</span><span class=p>/</span><span class=n>tomcat</span><span class=c># cd /</span>
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=c># ls</span>
+</span></span><span class=line><span class=cl><span class=n>bin</span>   <span class=n>configfiles</span>  <span class=n>etc</span>   <span class=n>lib</span>    <span class=n>media</span>  <span class=n>opt</span>   <span class=n>root</span>  <span class=n>sbin</span>  <span class=n>sys</span>  <span class=n>usr</span>
+</span></span><span class=line><span class=cl><span class=n>boot</span>  <span class=n>dev</span>          <span class=n>home</span>  <span class=n>lib64</span>  <span class=n>mnt</span>    <span class=n>proc</span>  <span class=n>run</span>   <span class=n>srv</span>   <span class=n>tmp</span>  <span class=n>var</span>
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=c># cat /configfiles/</span>
+</span></span><span class=line><span class=cl><span class=p>..</span><span class=n>2021_11_17_13_38_23</span><span class=p>.</span><span class=n>779999358</span><span class=p>/</span> <span class=n>server</span><span class=p>.</span><span class=n>xml</span>
+</span></span><span class=line><span class=cl><span class=p>..</span><span class=n>data</span><span class=p>/</span>                          
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=c># cat /configfiles/server.xml </span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=k>?</span><span class=n>xml</span> <span class=n>version</span><span class=p>=</span><span class=s2>&#34;1.0&#34;</span> <span class=n>encoding</span><span class=p>=</span><span class=s2>&#34;ISO-8859-1&#34;</span><span class=p>?&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;!--</span>  <span class=n>Copyright</span> <span class=n>w3school</span><span class=p>.</span><span class=n>com</span><span class=p>.</span><span class=n>cn</span> <span class=p>--&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>to</span><span class=p>&gt;</span><span class=n>George</span><span class=p>&lt;/</span><span class=n>to</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>from</span><span class=p>&gt;</span><span class=n>John</span><span class=p>&lt;/</span><span class=n>from</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>heading</span><span class=p>&gt;</span><span class=n>Reminder</span><span class=p>&lt;/</span><span class=n>heading</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>body</span><span class=p>&gt;</span><span class=n>Don</span><span class=err>&#39;</span><span class=n>t</span> <span class=n>forget</span> <span class=n>the</span> <span class=n>meeting</span><span class=p>!&lt;/</span><span class=n>body</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>登录容器，查看到在/configfiles目录下存在server.xml文件，它的内容就是ConfigMap“cm-appconfigfiles”中key定义的内容。如果在引用ConfigMap时不指定items，则使用volumeMount方式在容器内的目录下为每个item都生成一个文件名为key的文件。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-powershell data-lang=powershell><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=n>usr</span><span class=p>/</span><span class=n>local</span><span class=p>/</span><span class=n>tomcat</span><span class=c># cd /configfiles/</span>
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=n>configfiles</span><span class=c># ls</span>
+</span></span><span class=line><span class=cl><span class=nb>key-serverxml</span>
+</span></span><span class=line><span class=cl><span class=n>root</span><span class=nv>@cm</span><span class=o>-file</span><span class=n>-pod</span><span class=err>:</span><span class=p>/</span><span class=n>configfiles</span><span class=c># cat key-serverxml </span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=k>?</span><span class=n>xml</span> <span class=n>version</span><span class=p>=</span><span class=s2>&#34;1.0&#34;</span> <span class=n>encoding</span><span class=p>=</span><span class=s2>&#34;ISO-8859-1&#34;</span><span class=p>?&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;!--</span>  <span class=n>Copyright</span> <span class=n>w3school</span><span class=p>.</span><span class=n>com</span><span class=p>.</span><span class=n>cn</span> <span class=p>--&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>to</span><span class=p>&gt;</span><span class=n>George</span><span class=p>&lt;/</span><span class=n>to</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>from</span><span class=p>&gt;</span><span class=n>John</span><span class=p>&lt;/</span><span class=n>from</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>heading</span><span class=p>&gt;</span><span class=n>Reminder</span><span class=p>&lt;/</span><span class=n>heading</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=p>&lt;</span><span class=n>body</span><span class=p>&gt;</span><span class=n>Don</span><span class=err>&#39;</span><span class=n>t</span> <span class=n>forget</span> <span class=n>the</span> <span class=n>meeting</span><span class=p>!&lt;/</span><span class=n>body</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=n>note</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#使用configmap的限制条件><h3 id=使用configmap的限制条件><span class=hanchor arialabel=Anchor># </span>使用configMap的限制条件</h3></a><ul><li>ConfigMap必须在Pod之前创建</li><li>ConfigMap受Namespace限制，只有处于相同Namespace中的Pod才可以引用它。</li><li>ConfigMap中的配额管理还未能实现。</li><li>kubelet只支持可以被API Server管理的Pod使用ConfigMap。kubelet在本Node上通过 &ndash;manifest-url或&ndash;config自动创建的静态Pod将无法引用ConfigMap。</li><li>在Pod对ConfigMap进行挂载（volumeMount）操作时，在容器内部只能挂载为“目录”，无法挂载为“文件”。在挂载到容器内部后，在目录下将包含ConfigMap定义的每个item，如果在该目录下原来还有其他文件，则容器内的该目录将被挂载的ConfigMap覆盖。如果应用程序需要保留原来的其他文件，则需要进行额外的处理。可以将ConfigMap挂载到容器内部的临时目录，再通过启动脚本将配置文件复制或者链接到（cp或link命令）应用所用的实际配置目录下。</li></ul></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
