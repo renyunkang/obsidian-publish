@@ -1,0 +1,189 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="预编译、编译、汇编、链接
+1 2 3 4 5 6 7  // hello.c #include <stdio.h>int main() { printf(&#34;hello world\n&#34;); return 0; }   | $ gcc hello."><title>Knowledge Garden</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.f179b78f8b86a518e2d6f74951af8c85.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.6df2602395f9b2c334ad6169e6a18b9e.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>最近编辑于
+May 5, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#预编译>预编译</a></li><li><a href=#编译>编译</a></li><li><a href=#汇编>汇编</a></li><li><a href=#链接>链接</a></li><li><a href=#编译器>编译器</a><ol><li><a href=#词法分析lex工具>词法分析【lex工具】</a></li><li><a href=#语法分析yacc工具>语法分析【yacc工具】</a></li></ol></li><li><a href=#语义分析>语义分析</a></li><li><a href=#中间代码生成>中间代码生成</a></li><li><a href=#目标代码生成与优化>目标代码生成与优化</a></li><li><a href=#模块拼装---静态链接>模块拼装 - 静态链接</a></li></ol></nav></details></aside><p>预编译、编译、汇编、链接</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=c1>// hello.c
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=cp>#include</span> <span class=cpf>&lt;stdio.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=kt>int</span> <span class=nf>main</span><span class=p>()</span> 
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>printf</span><span class=p>(</span><span class=s>&#34;hello world</span><span class=se>\n</span><span class=s>&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>| $ gcc hello.c
+$ ./a.out</p><table><thead><tr><th>hello world</th></tr></thead></table><a href=#预编译><h2 id=预编译><span class=hanchor arialabel=Anchor># </span>预编译</h2></a><p>预编译过程主要处理那些源代码文件中的以"#&ldquo;开始的预编译指令：</p><ul><li>将所有#define删除，并且展开所有的宏定义</li><li>处理所有条件编译指令#if、#ifdef、#elif、#else、#endif，这个过程是递归进行的。</li><li>删除所有的//和/* */注释</li><li>添加行号和文件标识，比如# 3 &ldquo;hello.c&rdquo; 2，以便于编译时编译器产生调试用的行号信息以及用于编译时产生的编译错误或警告能显示行号</li><li>保留所有的#pragma编译器指令（编译器会使用它们）</li></ul><p>预编译指令：预编译后的文件扩展名为.i/.ii</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>gcc -E hello.c -o hello.i 
+</span></span><span class=line><span class=cl>cpp hello.c &gt; hello.i
+</span></span></code></pre></td></tr></table></div></div><p>hello.i文件去掉中间一部分后展示</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>orange@DESKTOP-GQM0ULL:~/program$ cat hello.i
+</span></span><span class=line><span class=cl><span class=c1># 1 &#34;hello.c&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># 1 &#34;&lt;built-in&gt;&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># 1 &#34;&lt;command-line&gt;&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># 31 &#34;&lt;command-line&gt;&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># 1 &#34;/usr/include/stdc-predef.h&#34; 1 3 4</span>
+</span></span><span class=line><span class=cl><span class=c1># 32 &#34;&lt;command-line&gt;&#34; 2</span>
+</span></span><span class=line><span class=cl><span class=c1># 1 &#34;hello.c&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>extern void funlockfile <span class=o>(</span>FILE *__stream<span class=o>)</span> __attribute__ <span class=o>((</span>__nothrow__ , __leaf__<span class=o>))</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># 858 &#34;/usr/include/stdio.h&#34; 3 4</span>
+</span></span><span class=line><span class=cl>extern int __uflow <span class=o>(</span>FILE *<span class=o>)</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>extern int __overflow <span class=o>(</span>FILE *, int<span class=o>)</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=c1># 873 &#34;/usr/include/stdio.h&#34; 3 4</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 3 &#34;hello.c&#34; 2</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 3 &#34;hello.c&#34;</span>
+</span></span><span class=line><span class=cl>int main<span class=o>()</span>
+</span></span><span class=line><span class=cl><span class=o>{</span>
+</span></span><span class=line><span class=cl>    printf<span class=o>(</span><span class=s2>&#34;hello world\n&#34;</span><span class=o>)</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> 0<span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#编译><h2 id=编译><span class=hanchor arialabel=Anchor># </span>编译</h2></a><p>对预处理完的文件进行一系列的词法分析、语法分析、语义分析以及优化后生成相应的汇编代码文件。
+<code>gcc -S hello.i -o hello.s</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>orange@DESKTOP-GQM0ULL:~/program$ cat hello.s
+</span></span><span class=line><span class=cl>        .file   <span class=s2>&#34;hello.c&#34;</span>
+</span></span><span class=line><span class=cl>        .text
+</span></span><span class=line><span class=cl>        .section        .rodata
+</span></span><span class=line><span class=cl>.LC0:
+</span></span><span class=line><span class=cl>        .string <span class=s2>&#34;hello world&#34;</span>
+</span></span><span class=line><span class=cl>        .text
+</span></span><span class=line><span class=cl>        .globl  main
+</span></span><span class=line><span class=cl>        .type   main, @function
+</span></span><span class=line><span class=cl>main:
+</span></span><span class=line><span class=cl>.LFB0:
+</span></span><span class=line><span class=cl>        .cfi_startproc
+</span></span><span class=line><span class=cl>        endbr64
+</span></span><span class=line><span class=cl>        pushq   %rbp
+</span></span><span class=line><span class=cl>        .cfi_def_cfa_offset <span class=m>16</span>
+</span></span><span class=line><span class=cl>        .cfi_offset 6, -16
+</span></span><span class=line><span class=cl>        movq    %rsp, %rbp
+</span></span><span class=line><span class=cl>        .cfi_def_cfa_register <span class=m>6</span>
+</span></span><span class=line><span class=cl>        leaq    .LC0<span class=o>(</span>%rip<span class=o>)</span>, %rdi
+</span></span><span class=line><span class=cl>        call    puts@PLT
+</span></span><span class=line><span class=cl>        movl    <span class=nv>$0</span>, %eax
+</span></span><span class=line><span class=cl>        popq    %rbp
+</span></span><span class=line><span class=cl>        .cfi_def_cfa 7, <span class=m>8</span>
+</span></span><span class=line><span class=cl>        ret
+</span></span><span class=line><span class=cl>        .cfi_endproc
+</span></span><span class=line><span class=cl>.LFE0:
+</span></span><span class=line><span class=cl>        .size   main, .-main
+</span></span><span class=line><span class=cl>        .ident  <span class=s2>&#34;GCC: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0&#34;</span>
+</span></span><span class=line><span class=cl>        .section        .note.GNU-stack,<span class=s2>&#34;&#34;</span>,@progbits
+</span></span><span class=line><span class=cl>        .section        .note.gnu.property,<span class=s2>&#34;a&#34;</span>
+</span></span><span class=line><span class=cl>        .align <span class=m>8</span>
+</span></span><span class=line><span class=cl>        .long    1f - 0f
+</span></span><span class=line><span class=cl>        .long    4f - 1f
+</span></span><span class=line><span class=cl>        .long    <span class=m>5</span>
+</span></span><span class=line><span class=cl>0:
+</span></span><span class=line><span class=cl>        .string  <span class=s2>&#34;GNU&#34;</span>
+</span></span><span class=line><span class=cl>1:
+</span></span><span class=line><span class=cl>        .align <span class=m>8</span>
+</span></span><span class=line><span class=cl>        .long    0xc0000002
+</span></span><span class=line><span class=cl>        .long    3f - 2f
+</span></span><span class=line><span class=cl>2:
+</span></span><span class=line><span class=cl>        .long    0x3
+</span></span><span class=line><span class=cl>3:
+</span></span><span class=line><span class=cl>        .align <span class=m>8</span>
+</span></span><span class=line><span class=cl>4:
+</span></span></code></pre></td></tr></table></div></div><a href=#汇编><h2 id=汇编><span class=hanchor arialabel=Anchor># </span>汇编</h2></a><p>汇编器将汇编代码转变为机器可以执行的命令，每一句汇编语句几乎都对应一条机器指令。
+<code>as hello.s -o hello.o</code>
+<code>gcc -c hello.s -o hello.o</code>
+<code>gcc -c hello.c -o hello.o</code></p><a href=#链接><h2 id=链接><span class=hanchor arialabel=Anchor># </span>链接</h2></a><p><code>ld -static /usr/lib/x86_64-linux-gnu/crt1.o /usr/lib/x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/9/crtbeginT.o -L/usr/lib/gcc/x86_64-linux-gnu/9 -L/usr/lib/x86_64-linux-gnu -L/usr/lib -L/lib hello.o --start-group -lgcc -lgcc_eh -lc --end-group /usr/lib/gcc/x86_64-linux-gnu/9/crtend.o /usr/lib/x86_64-linux-gnu/crtn.o</code>
+链接了一大堆文件链接起来才得到了"a.out"可执行文件，去掉目录之后
+<code>ld -static crt1.o crti.o crtbeginT.o hello.o --start-group -lgcc -lgcc_eh -lc --end-group crtend.o crtn.o</code>
+抛出问题：</p><ul><li><code>crt1.o crti.o crtbeginT.o crtend.o crtn.o</code>这些文件是干什么的</li><li><code>-lgcc -lgcc_eh -lc</code>这些参数是什么参数</li><li>为什么需要这些与hello.o链接才能得到可执行文件</li><li>为什么汇编器不直接生成可执行文件而是输出一个目标文件，为什么需要链接</li></ul><a href=#编译器><h2 id=编译器><span class=hanchor arialabel=Anchor># </span>编译器</h2></a><p>将高级语言翻译成机器语言的一个工具，高级语言的出现使得程序员更加关注程序逻辑本书身，尽量少考虑计算机本身的限制，如字长、内存大小、通信方式、存储方式等。
+编译过程一般分为6步：扫描、语法分析、语义分析、源代码优化、代码生成、目标代码优化。</p><a href=#词法分析lex工具><h3 id=词法分析lex工具><span class=hanchor arialabel=Anchor># </span>词法分析【lex工具】</h3></a><p>首先源码被程序输入到扫描器，扫描器的任务只是简单的进行词法分析，运用一种类似于<strong>有限状态机的</strong>算法可以轻松地将源代码的字符序列分割为一系列的记号。
+词法分析产生的记号一般可以分为如下几类：</p><ul><li>关键字</li><li>标识符</li><li>字面量（包括数字、字符串）</li><li>特殊符号（加号、等号）</li></ul><p>在识别记号的同时，扫描器将标识符存放到符号表，将数字、字符串常量存放到文字表等。</p><a href=#语法分析yacc工具><h3 id=语法分析yacc工具><span class=hanchor arialabel=Anchor># </span>语法分析【yacc工具】</h3></a><p>语法分析器将对由扫描器产生的记号进行语法分析，从而产生语法树，整个分析过程采用了上下文无关语法的分析手段。由语法分析器生成的语法树就是以<strong>表达式</strong>为节点的树。</p><ul><li>符号和数字是最小的表达式，它们不是由其他的表达式来组成，所以它们经常作为整个语法树的叶节点。</li><li>在语法分析的同时，很多运算符号的优先级和含义也被确定下来。</li><li>有些符号具有多重含义，语法分析阶段会对这些内容区分</li><li>如果出现表达式不合法、括号不匹配、缺少操作符等编译器就会报错</li></ul><a href=#语义分析><h2 id=语义分析><span class=hanchor arialabel=Anchor># </span>语义分析</h2></a><p>语义分析器检测语句在语法上是否合法。</p><ul><li>静态语义：编译器在编译期可以确定的语义；通常包括声明和类型的匹配、类型的转换</li><li>动态语义：只有在运行期可以确定的语义，0作为除数等情况。</li></ul><p>通过语义分析阶段后，整个语法树的表达式都被标识了类型，如果有些类型需要做隐式转换，语义分析程序会在语法树中插入对应的转换节点。语义分析器还对符号表中的符号类型也做了更新</p><a href=#中间代码生成><h2 id=中间代码生成><span class=hanchor arialabel=Anchor># </span>中间代码生成</h2></a><p>中间代码的生成是一种在源代码级别的优化过程，即源码级优化器。类似(2+6)这样的表达式可以直接在编译期间优化为8，其实直接在语法树上做优化比较困难，所以源代码优化器往往将整个语法树转换为中间代码，它是语法树的顺序表示其实他已经很接近目标代码了，但是他一般跟目标机器和运行时环境是无关的，如它不包含数据的尺寸、变量地址和寄存器的名字。
+中间代码使得编译器可以被分为前端和后端，编译器前端负责产生机器无关的中间代码，编译器后端将中间代码转换为目标机器代码</p><a href=#目标代码生成与优化><h2 id=目标代码生成与优化><span class=hanchor arialabel=Anchor># </span>目标代码生成与优化</h2></a><p>编译器后端代码生成器和目标代码优化器。代码生成器将中间代码转换为目标机器代码，这个过程十分依赖于目标机器，因为不同的机器有不同的字节、寄存器、整数类型和浮点数数据类型等。目标代码优化器会对目标代码进行优化，比如选择合适的选址方式、使用位运算来代替乘法运算、删除多余的指令等。
+现代编译器有着异常复杂的结构：</p><ul><li>现代高级变编程语言十分复杂，如c++，现在没有一个编译器能完整的支持C++语言标准所规定的所有语言特性</li><li>现代计算机的CPU相当复杂，采用了如流水线、多发射等特性，使得编译器的机器指令优化过程变得十分复杂</li><li>有些编译器支持多种硬件平台，允许编译器编译出多种目标CPU的代码</li></ul><p>事实上，定义其他模块的全局变量和函数在最终运行时的绝对地址都要在最终链接的时候才能确定。现代编译器可以将一个源代码文件编译成一个未链接的目标文件，然后由链接器最终将这些目标文件链接在一起形成可执行文件。</p><a href=#模块拼装---静态链接><h2 id=模块拼装---静态链接><span class=hanchor arialabel=Anchor># </span>模块拼装 - 静态链接</h2></a><p>链接过程主要包括了<strong>地址和空间分配、符号决议和重定位</strong>。符号决议也叫符号绑定、地址绑定。
+每个模块的源文件通过编译器编译为目标文件，目标文件和库链接形成可执行文件，库是一组目标文件的包，就是一些最常用的代码编译成目标文件后打包存放。最常见的库就是<strong>运行时</strong>库，他是支持程序运行的基本函数的集合。
+<strong>静态链接最基本的过程和作用</strong>：使用链接器，你可以直接引用其他模块的函数和全局变量而无需知道其地址，因为链接器在链接的时候，会根据你所引用的符号fun，自动去相应的fun.c模块查找fun的地址，然后在main.c模块中所有引用到func的指令重新修正，让他们的目标地址成为真正的fun函数的地址。
+假设在B中定义var，在A中使用var = 42，汇编指令为**mov1 $0x2a, var，机器码C705 00000000 2a000000【指令码 目标地址 源常量】，**在编译A时编译器并不知道变量var的目标地址，编译器在不知var地址的情况下，将这条汇编指令mov的目标地址设为0，等待链接器在链接时修正。地址的修正的过程也被叫做重定位，每个要被修正的地方叫一个重定位入口。重定位所做的就是给程序中的每个这样的绝对地址引用的位置打补丁，使他们指向正确的地址。</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>

@@ -1,0 +1,445 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="Q1 = 和 := 的区别？ := 声明+赋值； = 仅赋值 简短声明模式的限制：
+ 定义变量同时显示初始化 不能提供数据类型 只能在函数内部使用  1 2 3 4  var foo int foo = 10 // 等价于 foo := 10   编译执行下面代码的结果 1 2 3 4 5 6 7 8 9 10  package main var( size :=1024 max_size = size*2 ) func main() { println(size,max_size) } // syntax error: unexpected :=   Q2 常量 常量不同于变量，变量在运行时分配内存，常量通常在被编译器在预处理阶段直接展开，作为指令数据直接使用。"><title>Knowledge Garden</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.f179b78f8b86a518e2d6f74951af8c85.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.6df2602395f9b2c334ad6169e6a18b9e.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>最近编辑于
+May 5, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#q1--和--的区别>Q1 <code>=</code> 和 <code>:=</code> 的区别？</a></li><li><a href=#编译执行下面代码的结果>编译执行下面代码的结果</a></li><li><a href=#q2-常量>Q2 常量</a></li><li><a href=#q3-goto>Q3 goto</a></li><li><a href=#q4-golang-类型>Q4 golang 类型</a><ol><li><a href=#1-type-alias>1. type Alias</a></li></ol></li><li><a href=#heading></a></li><li><a href=#q5-闭包延迟求值引用相同变量>Q5 闭包延迟求值、引用相同变量</a></li><li><a href=#heading-1></a></li><li><a href=#q6-type>Q6 type</a></li><li><a href=#q7-golang-函数返回值>Q7 golang 函数返回值</a></li><li><a href=#q8-append>Q8 append</a></li><li><a href=#q9-各个类型的空值>Q9 各个类型的空值</a></li><li><a href=#q10-go枚举-itoa>Q10 go枚举 itoa</a></li><li><a href=#q11-结构体比较>Q11 结构体比较</a></li><li><a href=#q12-interface-内部结构>Q12 interface 内部结构</a></li><li><a href=#q3-go-有异常类型吗>Q3 Go 有异常类型吗？</a></li><li><a href=#q4-什么是协程>Q4 什么是协程</a></li><li><a href=#heading-2></a></li><li><a href=#q5-如何高效地拼接字符串--以及为什么>Q5 如何高效地拼接字符串 以及为什么</a></li><li><a href=#heading-3></a></li><li><a href=#q6-什么是runc类型>Q6 什么是runc类型</a></li><li><a href=#heading-4></a></li><li><a href=#heading-5></a></li><li><a href=#q7-golang中的map相关包含操作>Q7 golang中的map相关包含操作</a></li></ol></nav></details></aside><a href=#q1--和--的区别><h2 id=q1--和--的区别><span class=hanchor arialabel=Anchor># </span>Q1 <code>=</code> 和 <code>:=</code> 的区别？</h2></a><p><code>:=</code> 声明+赋值； <code>=</code> 仅赋值
+简短声明模式的限制：</p><ul><li>定义变量同时显示初始化</li><li>不能提供数据类型</li><li>只能在函数内部使用</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>var</span> <span class=nx>foo</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl><span class=nx>foo</span> <span class=p>=</span> <span class=mi>10</span>
+</span></span><span class=line><span class=cl><span class=c1>// 等价于
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>foo</span> <span class=o>:=</span> <span class=mi>10</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#编译执行下面代码的结果><h2 id=编译执行下面代码的结果><span class=hanchor arialabel=Anchor># </span>编译执行下面代码的结果</h2></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
+</span></span><span class=line><span class=cl><span class=kd>var</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=nx>size</span> <span class=o>:=</span><span class=mi>1024</span>
+</span></span><span class=line><span class=cl>    <span class=nx>max_size</span> <span class=p>=</span> <span class=nx>size</span><span class=o>*</span><span class=mi>2</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nb>println</span><span class=p>(</span><span class=nx>size</span><span class=p>,</span><span class=nx>max_size</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// syntax error: unexpected :=
+</span></span></span></code></pre></td></tr></table></div></div><a href=#q2-常量><h2 id=q2-常量><span class=hanchor arialabel=Anchor># </span>Q2 常量</h2></a><p>常量不同于变量，变量在运行时分配内存，常量通常在被编译器在预处理阶段直接展开，作为指令数据直接使用。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
+</span></span><span class=line><span class=cl><span class=kd>const</span> <span class=nx>cl</span>  <span class=p>=</span> <span class=mi>100</span>
+</span></span><span class=line><span class=cl><span class=kd>var</span> <span class=nx>bl</span>    <span class=p>=</span> <span class=mi>123</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nb>println</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>bl</span><span class=p>,</span><span class=nx>bl</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>println</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>cl</span><span class=p>,</span><span class=nx>cl</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// cannot take the address of cl
+</span></span></span></code></pre></td></tr></table></div></div><a href=#q3-goto><h2 id=q3-goto><span class=hanchor arialabel=Anchor># </span>Q3 goto</h2></a><p>goto 不能跳转到其他函数或者内层代码</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>i</span><span class=o>:=</span><span class=mi>0</span><span class=p>;</span><span class=nx>i</span><span class=p>&lt;</span><span class=mi>10</span> <span class=p>;</span><span class=nx>i</span><span class=o>++</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>loop</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=nb>println</span><span class=p>(</span><span class=nx>i</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>goto</span> <span class=nx>loop</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// goto loop jumps into block starting at
+</span></span></span></code></pre></td></tr></table></div></div><a href=#q4-golang-类型><h2 id=q4-golang-类型><span class=hanchor arialabel=Anchor># </span>Q4 golang 类型</h2></a><ul><li>defintion：基于一个类型创建一个新类型</li><li>alias：基于一个类型创建一个别名</li></ul><a href=#1-type-alias><h3 id=1-type-alias><span class=hanchor arialabel=Anchor># </span>1. type Alias</h3></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>type</span> <span class=nx>MyInt1</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>MyInt2</span> <span class=p>=</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>i</span> <span class=kt>int</span> <span class=p>=</span><span class=mi>9</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>i1</span> <span class=nx>MyInt1</span> <span class=p>=</span> <span class=nx>i</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>i2</span> <span class=nx>MyInt2</span> <span class=p>=</span> <span class=nx>i</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>i1</span><span class=p>,</span><span class=nx>i2</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// cannot use i (type int) as type MyInt1 in assignment
+</span></span></span><span class=line><span class=cl><span class=c1>// MyInt1 为defintion，虽然底层类型为int类型，但是不能直接赋值，需要强转
+</span></span></span><span class=line><span class=cl><span class=c1>// MyInt2 为alias
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>type</span> <span class=nx>User</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>MyUser1</span> <span class=nx>User</span>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>MyUser2</span> <span class=p>=</span> <span class=nx>User</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>i</span> <span class=nx>MyUser1</span><span class=p>)</span> <span class=nf>m1</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;MyUser1.m1&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>i</span> <span class=nx>User</span><span class=p>)</span> <span class=nf>m2</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>    <span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;User.m2&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>var</span> <span class=nx>i1</span> <span class=nx>MyUser1</span>
+</span></span><span class=line><span class=cl>    <span class=kd>var</span> <span class=nx>i2</span> <span class=nx>MyUser2</span>
+</span></span><span class=line><span class=cl>    <span class=nx>i1</span><span class=p>.</span><span class=nf>m1</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=nx>i2</span><span class=p>.</span><span class=nf>m2</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// MyUser1.m1
+</span></span></span><span class=line><span class=cl><span class=c1>// User.m2
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=heading></h2><a href=#q5-闭包延迟求值引用相同变量><h2 id=q5-闭包延迟求值引用相同变量><span class=hanchor arialabel=Anchor># </span>Q5 闭包延迟求值、引用相同变量</h2></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>test</span><span class=p>()</span> <span class=p>[]</span><span class=kd>func</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>var</span> <span class=nx>funs</span> <span class=p>[]</span><span class=kd>func</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>i</span><span class=o>:=</span><span class=mi>0</span><span class=p>;</span><span class=nx>i</span><span class=p>&lt;</span><span class=mi>2</span> <span class=p>;</span><span class=nx>i</span><span class=o>++</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>funs</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>funs</span><span class=p>,</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nb>println</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>i</span><span class=p>,</span><span class=nx>i</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>})</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nx>funs</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>test1</span><span class=p>()</span> <span class=p>[]</span><span class=kd>func</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>var</span> <span class=nx>funs</span> <span class=p>[]</span><span class=kd>func</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>i</span><span class=o>:=</span><span class=mi>0</span><span class=p>;</span><span class=nx>i</span><span class=p>&lt;</span><span class=mi>2</span> <span class=p>;</span><span class=nx>i</span><span class=o>++</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>x</span><span class=o>:=</span><span class=nx>i</span>
+</span></span><span class=line><span class=cl>        <span class=nx>funs</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>funs</span><span class=p>,</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nb>println</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>x</span><span class=p>,</span><span class=nx>x</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>})</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nx>funs</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>(){</span>
+</span></span><span class=line><span class=cl>    <span class=nx>funs</span><span class=o>:=</span><span class=nf>test</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=nx>_</span><span class=p>,</span><span class=nx>f</span><span class=o>:=</span><span class=k>range</span> <span class=nx>funs</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nf>f</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// 0xc042046000 2
+</span></span></span><span class=line><span class=cl><span class=c1>// 0xc042046000 2
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>循环使用局部变量</span><span class=err>，</span><span class=nx>每一次放入匿名函数所用的都是一个变量</span><span class=err>，</span><span class=nx>若想不一样则使用test1</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>test</span><span class=p>(</span><span class=nx>x</span> <span class=kt>int</span><span class=p>)</span> <span class=p>(</span><span class=kd>func</span><span class=p>(),</span><span class=kd>func</span><span class=p>())</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nb>println</span><span class=p>(</span><span class=nx>x</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=nx>x</span><span class=o>+=</span><span class=mi>10</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nb>println</span><span class=p>(</span><span class=nx>x</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>a</span><span class=p>,</span><span class=nx>b</span><span class=o>:=</span><span class=nf>test</span><span class=p>(</span><span class=mi>100</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nf>a</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=nf>b</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// 100
+</span></span></span><span class=line><span class=cl><span class=c1>// 110
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=heading-1></h2><a href=#q6-type><h2 id=q6-type><span class=hanchor arialabel=Anchor># </span>Q6 type</h2></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>i</span> <span class=o>:=</span> <span class=nf>GetValue</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>switch</span> <span class=nx>i</span><span class=p>.(</span><span class=kd>type</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=kt>int</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=nb>println</span><span class=p>(</span><span class=s>&#34;int&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=kt>string</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=nb>println</span><span class=p>(</span><span class=s>&#34;string&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=kd>interface</span><span class=p>{}:</span>
+</span></span><span class=line><span class=cl>		<span class=nb>println</span><span class=p>(</span><span class=s>&#34;interface&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=nb>println</span><span class=p>(</span><span class=s>&#34;unknown&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>GetValue</span><span class=p>()</span> <span class=kt>int</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>GetValueInterface</span><span class=p>()</span> <span class=kd>interface</span><span class=p>{}</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// type只能使用在interface上
+</span></span></span><span class=line><span class=cl><span class=c1>// 使用GetValue() 编译不通过，输出：cannot type switch on non-interface value i (type int)
+</span></span></span><span class=line><span class=cl><span class=c1>// GetValueInterface()输出：int
+</span></span></span></code></pre></td></tr></table></div></div><a href=#q7-golang-函数返回值><h2 id=q7-golang-函数返回值><span class=hanchor arialabel=Anchor># </span>Q7 golang 函数返回值</h2></a><p>在函数有多个返回值时，只要有一个返回值有指定命名，其他的也必须有命名。 如果返回值有有多个返回值必须加上括号； 如果只有一个返回值并且有命名也需要加上括号；</p><a href=#q8-append><h2 id=q8-append><span class=hanchor arialabel=Anchor># </span>Q8 append</h2></a><p>append切片时候别漏了&rsquo;&mldr;'</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s1</span> <span class=o>:=</span> <span class=p>[]</span><span class=kt>int</span><span class=p>{</span><span class=mi>1</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>3</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s2</span> <span class=o>:=</span> <span class=p>[]</span><span class=kt>int</span><span class=p>{</span><span class=mi>4</span><span class=p>,</span> <span class=mi>5</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s1</span> <span class=p>=</span> <span class=nb>append</span><span class=p>(</span><span class=nx>s1</span><span class=p>,</span> <span class=nx>s2</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>s1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// cannot use s2 (type []int) as type int in append
+</span></span></span><span class=line><span class=cl><span class=c1>// 修改为s1 = append(s1, s2...)
+</span></span></span></code></pre></td></tr></table></div></div><a href=#q9-各个类型的空值><h2 id=q9-各个类型的空值><span class=hanchor arialabel=Anchor># </span>Q9 各个类型的空值</h2></a><p>nil 可以用作 interface、function、pointer、map、slice 和 channel 的“空值”。string的空值为""
+在Go中所有变量都初始化为其零值。</p><ul><li>数值类型：0</li><li>字符串类型：空字符串</li><li>布尔类型：false</li><li>指针：nil</li><li>引用类型：引用的底层数据结构会被初始化为对应的零值，但是被声明为零值的引用类型的变量，会返回nil作为其值</li></ul><a href=#q10-go枚举-itoa><h2 id=q10-go枚举-itoa><span class=hanchor arialabel=Anchor># </span>Q10 go枚举 itoa</h2></a><p>golang中没有枚举类型，一般使用itoa简化定义
+<strong>itoa是golang语言的常量计数器，只能在常量表达式中使用，具有以下特性：</strong></p><ol><li><p><strong>itoa只能在常量表达式中使用</strong>
+| fmt.Println(iota)</p><table><thead><tr><th>// 编译错误： undefined: iota</th></tr></thead></table></li><li><p><strong>每次const出现，都会让itoa初始化为0</strong>
+| const a = iota // a=0
+const (
+  b = iota          //b=0
+  c                      //c=1</p><table><thead><tr><th>)</th></tr></thead></table></li><li><p><strong>自定义类型，并在const每增长一行常量声明 itoa便计数一次</strong>
+| type Weekday int
+const (
+    Sunday Weekday = iota  // 0
+    Monday                           // 1
+    Tuesday                           // 2
+    Wednesday                     // 3
+    Thursday
+    Friday
+    Saturday</p><table><thead><tr><th>)</th></tr></thead></table></li><li><p><strong>可跳过的值 (<strong>使用下划线跳过不想要的值</strong>)</strong>
+| type AudioOutput int
+const (
+    OutMute AudioOutput = iota // 0
+    OutMono                       // 1
+    OutStereo                     // 2
+    _
+    _
+    OutSurround                // 5</p><table><thead><tr><th>)</th></tr></thead></table></li><li><p><strong>位掩码表达式</strong>
+| type Flags uint
+const (
+FlagUp Flags = 1 &#171; iota // 1 &#171; 0 up
+FlagBroadcast // 1 &#171; 1 supports broadcast access capability
+FlagLoopback // 1 &#171; 2 is a loopback interface
+FlagPointToPoint // 1 &#171; 3 belongs to a point-to-point link
+FlagMulticast // 1 &#171; 4 supports multicast access capability
+)
+const (    _ = 1 &#171; (10 * iota)
+    KiB // 1024
+    MiB // 1048576
+    GiB // 1073741824
+    TiB // 1099511627776             (exceeds 1 &#171; 32)
+    PiB // 1125899906842624
+    EiB // 1152921504606846976
+    ZiB // 1180591620717411303424    (exceeds 1 &#171; 64)
+    YiB // 1208925819614629174706176</p><table><thead><tr><th>)</th></tr></thead></table></li><li><p><strong>定义在一行的情况</strong>
+| const (
+   Apple, Banana = iota + 1, iota + 2
+   Cherimoya, Durian
+   Elderberry, Fig
+)
+// itoa 在下一行增长，而不是立即取得它的引用
+// Apple: 1  
+// Banana: 2  
+// Cherimoya: 2  
+// Durian: 3  
+// Elderberry: 3  </p><table><thead><tr><th>// Fig: 4</th></tr></thead></table></li><li><p><strong>中间插队情况</strong>
+| const(
+    a = iota
+    b = 5
+    c = iota
+    d = 6
+    e
+    f  
+)</p><table><thead><tr><th>// 0 5 2 6 6 6</th></tr></thead></table></li></ol><p><a href=https://www.cnblogs.com/zsy/p/5370052.html rel=noopener>https://www.cnblogs.com/zsy/p/5370052.html</a></p><a href=#q11-结构体比较><h2 id=q11-结构体比较><span class=hanchor arialabel=Anchor># </span>Q11 结构体比较</h2></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>sn1</span> <span class=o>:=</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>age</span>  <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>name</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>	<span class=p>}{</span><span class=nx>age</span><span class=p>:</span> <span class=mi>11</span><span class=p>,</span> <span class=nx>name</span><span class=p>:</span> <span class=s>&#34;qq&#34;</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>sn2</span> <span class=o>:=</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>age</span>  <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>name</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>	<span class=p>}{</span><span class=nx>age</span><span class=p>:</span> <span class=mi>11</span><span class=p>,</span> <span class=nx>name</span><span class=p>:</span> <span class=s>&#34;qq&#34;</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>sn1</span> <span class=o>==</span> <span class=nx>sn2</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;sn1 == sn2&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>sm1</span> <span class=o>:=</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>age</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>m</span>   <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span>
+</span></span><span class=line><span class=cl>	<span class=p>}{</span><span class=nx>age</span><span class=p>:</span> <span class=mi>11</span><span class=p>,</span> <span class=nx>m</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;a&#34;</span><span class=p>:</span> <span class=s>&#34;1&#34;</span><span class=p>}}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>sm2</span> <span class=o>:=</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>age</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>m</span>   <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span>
+</span></span><span class=line><span class=cl>	<span class=p>}{</span><span class=nx>age</span><span class=p>:</span> <span class=mi>11</span><span class=p>,</span> <span class=nx>m</span><span class=p>:</span> <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=kt>string</span><span class=p>{</span><span class=s>&#34;a&#34;</span><span class=p>:</span> <span class=s>&#34;1&#34;</span><span class=p>}}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>sm1</span> <span class=o>==</span> <span class=nx>sm2</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;sm1 == sm2&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=c1>// 编译不通过： invalid operation: sm1 == sm2
+</span></span></span></code></pre></td></tr></table></div></div><p>进行结构体比较时候，只有相同类型的结构体才可以比较，结构体是否相同不但与属性类型个数有关，还与属性顺序相关。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>sn3:= struct {
+</span></span><span class=line><span class=cl>    name string
+</span></span><span class=line><span class=cl>    age  int
+</span></span><span class=line><span class=cl>}{age:11,name:&#34;qq&#34;}
+</span></span></code></pre></td></tr></table></div></div><p>sn3与sn1就不是相同的结构体了，不能比较。 还有一点需要注意的是结构体是相同的，但是结构体属性中有不可以比较的类型，如map,slice。 如果该结构属性都是可以比较的，那么就可以使用“==”进行比较操作。
+可以使用reflect.DeepEqual进行比较</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>if reflect.DeepEqual(sn1, sm) {
+</span></span><span class=line><span class=cl>    fmt.Println(&#34;sn1 ==sm&#34;)
+</span></span><span class=line><span class=cl>}else {
+</span></span><span class=line><span class=cl>    fmt.Println(&#34;sn1 !=sm&#34;)
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><a href=#q12-interface-内部结构><h2 id=q12-interface-内部结构><span class=hanchor arialabel=Anchor># </span>Q12 interface 内部结构</h2></a><a href=#q3-go-有异常类型吗><h2 id=q3-go-有异常类型吗><span class=hanchor arialabel=Anchor># </span>Q3 Go 有异常类型吗？</h2></a><p>Go 没有异常类型，只有错误类型（Error），通常使用返回值来表示异常状态。</p><a href=#q4-什么是协程><h2 id=q4-什么是协程><span class=hanchor arialabel=Anchor># </span>Q4 什么是协程</h2></a><h2 id=heading-2></h2><a href=#q5-如何高效地拼接字符串--以及为什么><h2 id=q5-如何高效地拼接字符串--以及为什么><span class=hanchor arialabel=Anchor># </span>Q5 如何高效地拼接字符串 以及为什么</h2></a><h2 id=heading-3></h2><a href=#q6-什么是runc类型><h2 id=q6-什么是runc类型><span class=hanchor arialabel=Anchor># </span>Q6 什么是runc类型</h2></a><h2 id=heading-4></h2><h2 id=heading-5></h2><a href=#q7-golang中的map相关包含操作><h2 id=q7-golang中的map相关包含操作><span class=hanchor arialabel=Anchor># </span>Q7 golang中的map相关包含操作</h2></a><p>sync.map
+判断map中是否包含某个key</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>

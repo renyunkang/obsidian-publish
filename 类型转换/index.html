@@ -1,0 +1,295 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="C中的类型  在Go语言中访问C语言的符号时，一般是通过虚拟的“C”包访问。Go语言中数值类型和C语言数据类型基本上是相似的，它们的对应关系表如下：
+   C语言类型 CGO类型 Go语言类型     char C.char byte   singed char C."><title>Knowledge Garden</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.f179b78f8b86a518e2d6f74951af8c85.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.6df2602395f9b2c334ad6169e6a18b9e.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>最近编辑于
+May 5, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents></nav></details></aside><ol><li><strong>C中的类型</strong></li></ol><p>在Go语言中访问C语言的符号时，一般是通过虚拟的“C”包访问。Go语言中数值类型和C语言数据类型基本上是相似的，它们的对应关系表如下：</p><table><thead><tr><th>C语言类型</th><th>CGO类型</th><th>Go语言类型</th></tr></thead><tbody><tr><td>char</td><td>C.char</td><td>byte</td></tr><tr><td>singed char</td><td>C.schar</td><td>int8</td></tr><tr><td>unsigned char</td><td>C.uchar</td><td>uint8</td></tr><tr><td>short</td><td>C.short</td><td>int16</td></tr><tr><td>unsigned short</td><td>C.short</td><td>uint16</td></tr><tr><td>int</td><td>C.int</td><td>int32</td></tr><tr><td>unsigned int</td><td>C.uint</td><td>uint32</td></tr><tr><td>long</td><td>C.long</td><td>int32</td></tr><tr><td>unsigned long</td><td>C.ulong</td><td>uint32</td></tr><tr><td>long long int</td><td>C.longlong</td><td>int64</td></tr><tr><td>unsigned long long int</td><td>C.ulonglong</td><td>uint64</td></tr><tr><td>float</td><td>C.float</td><td>float32</td></tr><tr><td>double</td><td>C.double</td><td>float64</td></tr><tr><td>size_t</td><td>C.size_t</td><td>uint</td></tr></tbody></table><p>需要注意的是，虽然在C语言中<code>int</code>、<code>short</code>等类型没有明确定义内存大小，但是在CGO中它们的内存大小是确定的。为了提高C语言的可移植性，在<code>&lt;stdint.h></code>文件中，不但每个数值类型都提供了明确内存大小，而且和Go语言的类型命名更加一致。</p><table><thead><tr><th>C语言类型</th><th>CGO类型</th><th>Go语言类型</th></tr></thead><tbody><tr><td>int8_t</td><td>C.int8_t</td><td>int8</td></tr><tr><td>uint8_t</td><td>C.uint8_t</td><td>uint8</td></tr><tr><td>int16_t</td><td>C.int16_t</td><td>int16</td></tr><tr><td>uint16_t</td><td>C.uint16_t</td><td>uint16</td></tr><tr><td>int32_t</td><td>C.int32_t</td><td>int32</td></tr><tr><td>uint32_t</td><td>C.uint32_t</td><td>uint32</td></tr><tr><td>int64_t</td><td>C.int64_t</td><td>int64</td></tr><tr><td>uint64_t</td><td>C.uint64_t</td><td>uint64</td></tr></tbody></table><p>如果C语言的类型是由多个关键字组成，则无法通过虚拟的“C”包直接访问(比如C语言的<code>unsigned short</code>不能直接通过<code>C.unsigned short</code>访问)。对于比较复杂的C语言类型，推荐使用<code>typedef</code>关键字提供一个规则的类型命名，这样更利于在CGO中访问。</p><ol start=2><li><strong>GO字符串和切片</strong></li></ol><p>在CGO生成的<code>_cgo_export.h</code>头文件中还会为Go语言的字符串、切片、字典、接口和管道等特有的数据类型生成对应的C语言类型：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=k>typedef</span> <span class=k>struct</span> <span class=p>{</span> <span class=k>const</span> <span class=kt>char</span> <span class=o>*</span><span class=n>p</span><span class=p>;</span> <span class=n>GoInt</span> <span class=n>n</span><span class=p>;</span> <span class=p>}</span> <span class=n>GoString</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>typedef</span> <span class=kt>void</span> <span class=o>*</span><span class=n>GoMap</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>typedef</span> <span class=kt>void</span> <span class=o>*</span><span class=n>GoChan</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>typedef</span> <span class=k>struct</span> <span class=p>{</span> <span class=kt>void</span> <span class=o>*</span><span class=n>t</span><span class=p>;</span> <span class=kt>void</span> <span class=o>*</span><span class=n>v</span><span class=p>;</span> <span class=p>}</span> <span class=n>GoInterface</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>typedef</span> <span class=k>struct</span> <span class=p>{</span> <span class=kt>void</span> <span class=o>*</span><span class=n>data</span><span class=p>;</span> <span class=n>GoInt</span> <span class=n>len</span><span class=p>;</span> <span class=n>GoInt</span> <span class=n>cap</span><span class=p>;</span> <span class=p>}</span> <span class=n>GoSlice</span><span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><p>不过需要注意的是，其中只有字符串和切片在CGO中有一定的使用价值，因为此二者可以在Go调用C语言函数时马上使用;而CGO并未针对其他的类型提供相关的辅助函数，且Go语言特有的内存模型导致我们无法保持这些由Go语言管理的内存指针，所以它们C语言环境并无使用的价值。</p><ol start=3><li><strong>结构体、联合、枚举类型</strong></li></ol><p>C语言的结构体、联合、枚举类型不能作为匿名成员被嵌入到Go语言的结构体中。
+在Go语言中，我们可以通过<code>C.struct_xxx</code>来访问C语言中定义的<code>struct xxx</code>结构体类型。结构体的内存布局按照C语言的通用对齐规则。对于指定了特殊对齐规则的结构体，无法在CGO中访问。
+对于联合类型，我们可以通过<code>C.union_xxx</code>来访问C语言中定义的<code>union xxx</code>类型。但是Go语言中并不支持C语言联合类型，它们会被转为对应大小的字节数组。
+对于枚举类型，我们可以通过<code>C.enum_xxx</code>来访问C语言中定义的<code>enum xxx</code>结构体类型。
+在C语言中，我们无法直接访问Go语言定义的结构体类型。</p><ul><li>结构体<ul><li>如果结构体的成员名字中碰巧是Go语言的关键字，可以通过在成员名开头添加下划线来访问</li><li>如果有2个成员：一个是以Go语言关键字命名，另一个刚好是以下划线和Go语言关键字命名，那么以Go语言关键字命名的成员将无法访问（被屏蔽）</li><li>C语言结构体中位字段对应的成员无法在Go语言中访问，如果需要操作位字段成员，需要通过在C语言中定义辅助函数来完成</li><li>对应零长数组的成员，无法在Go语言中直接访问数组的元素，但其中零长的数组成员所在位置的偏移量依然可以通过<code>unsafe.Offsetof(a.arr)</code>来访问</li></ul></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=cm>/*
+</span></span></span><span class=line><span class=cl><span class=cm>struct A {
+</span></span></span><span class=line><span class=cl><span class=cm>	int i;
+</span></span></span><span class=line><span class=cl><span class=cm>	float f;
+</span></span></span><span class=line><span class=cl><span class=cm>    int   type;  // type 是 Go 语言的关键字
+</span></span></span><span class=line><span class=cl><span class=cm>	float _type; // 将屏蔽CGO对 type 成员的访问
+</span></span></span><span class=line><span class=cl><span class=cm>	int   size: 10; // 位字段无法访问
+</span></span></span><span class=line><span class=cl><span class=cm>	float arr[];    // 零长的数组也无法访问
+</span></span></span><span class=line><span class=cl><span class=cm>};
+</span></span></span><span class=line><span class=cl><span class=cm>*/</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;C&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;fmt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>a</span> <span class=nx>C</span><span class=p>.</span><span class=nx>struct_A</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>a</span><span class=p>.</span><span class=nx>i</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>a</span><span class=p>.</span><span class=nx>f</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>a</span><span class=p>.</span><span class=nx>_type</span><span class=p>)</span> <span class=c1>// _type 对应 _type
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>a</span><span class=p>.</span><span class=nx>size</span><span class=p>)</span> <span class=c1>// 错误: 位字段无法访问
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>a</span><span class=p>.</span><span class=nx>arr</span><span class=p>)</span>  <span class=c1>// 错误: 零长的数组也无法访问
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>联合体 &ndash; 如果需要操作C语言的联合类型变量，一般有三种方法<ul><li>第一种是在C语言中定义辅助函数；</li><li>第二种是通过Go语言的"encoding/binary"手工解码成员(需要注意大端小端问题)；</li><li>第三种是使用<code>unsafe</code>包强制转型为对应类型(这是性能最好的方式)。</li></ul></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=cm>/*
+</span></span></span><span class=line><span class=cl><span class=cm>#include &lt;stdint.h&gt;
+</span></span></span><span class=line><span class=cl><span class=cm>union B1 {
+</span></span></span><span class=line><span class=cl><span class=cm>	int i;
+</span></span></span><span class=line><span class=cl><span class=cm>	float f;
+</span></span></span><span class=line><span class=cl><span class=cm>};
+</span></span></span><span class=line><span class=cl><span class=cm>
+</span></span></span><span class=line><span class=cl><span class=cm>union B2 {
+</span></span></span><span class=line><span class=cl><span class=cm>	int8_t i8;
+</span></span></span><span class=line><span class=cl><span class=cm>	int64_t i64;
+</span></span></span><span class=line><span class=cl><span class=cm>};
+</span></span></span><span class=line><span class=cl><span class=cm>
+</span></span></span><span class=line><span class=cl><span class=cm>union B {
+</span></span></span><span class=line><span class=cl><span class=cm>	int i;
+</span></span></span><span class=line><span class=cl><span class=cm>	float f;
+</span></span></span><span class=line><span class=cl><span class=cm>};
+</span></span></span><span class=line><span class=cl><span class=cm>*/</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;C&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;fmt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>var</span> <span class=nx>b1</span> <span class=nx>C</span><span class=p>.</span><span class=nx>union_B1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;%T\n&#34;</span><span class=p>,</span> <span class=nx>b1</span><span class=p>)</span> <span class=c1>// [4]uint8 转为对应大小的字节数组
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>b2</span> <span class=nx>C</span><span class=p>.</span><span class=nx>union_B2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;%T\n&#34;</span><span class=p>,</span> <span class=nx>b2</span><span class=p>)</span> <span class=c1>// [8]uint8 转为对应大小的字节数组
+</span></span></span><span class=line><span class=cl><span class=c1></span>    
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>b</span> <span class=nx>C</span><span class=p>.</span><span class=nx>union_B</span><span class=p>;</span> <span class=c1>// unsafe包访问联合类型成员的
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;b.i:&#34;</span><span class=p>,</span> <span class=o>*</span><span class=p>(</span><span class=o>*</span><span class=nx>C</span><span class=p>.</span><span class=kt>int</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>b</span><span class=p>)))</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;b.f:&#34;</span><span class=p>,</span> <span class=o>*</span><span class=p>(</span><span class=o>*</span><span class=nx>C</span><span class=p>.</span><span class=kt>float</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>b</span><span class=p>)))</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>但是对于有嵌套联合类型的情况处理使用<code>unsafe</code>包会导致问题复杂化。对于复杂的联合类型，推荐通过在C语言中定义辅助函数的方式处理。</p><ul><li>枚举</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=cm>/*
+</span></span></span><span class=line><span class=cl><span class=cm>enum C {
+</span></span></span><span class=line><span class=cl><span class=cm>	ONE,
+</span></span></span><span class=line><span class=cl><span class=cm>	TWO,
+</span></span></span><span class=line><span class=cl><span class=cm>}
+</span></span></span><span class=line><span class=cl><span class=cm>*/</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;C&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;fmt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>c</span> <span class=nx>C</span><span class=p>.</span><span class=nx>enum_C</span> <span class=p>=</span> <span class=nx>C</span><span class=p>.</span><span class=nx>TWO</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>c</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nx>ONE</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nx>TWO</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>在C语言中，枚举类型底层对应<code>int</code>类型，支持负数类型的值。我们可以通过<code>C.ONE</code>、<code>C.TWO</code>等直接访问定义的枚举值。</p><ol start=4><li><strong>数组、字符串、切片</strong></li></ol><p>Go语言和C语言的数组、字符串和切片之间的相互转换可以简化为Go语言的切片和C语言中指向一定长度内存的指针之间的转换。CGO的C虚拟包提供了以下一组函数，用于Go语言和C语言之间数组、字符串的双向转换：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// Go string to C string
+</span></span></span><span class=line><span class=cl><span class=c1>// The C string is allocated in the C heap using malloc.
+</span></span></span><span class=line><span class=cl><span class=c1>// It is the caller&#39;s responsibility to arrange for it to be
+</span></span></span><span class=line><span class=cl><span class=c1>// freed, such as by calling C.free (be sure to include stdlib.h
+</span></span></span><span class=line><span class=cl><span class=c1>// if C.free is needed).
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nx>C</span><span class=p>.</span><span class=nf>CString</span><span class=p>(</span><span class=kt>string</span><span class=p>)</span> <span class=o>*</span><span class=nx>C</span><span class=p>.</span><span class=nx>char</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Go []byte slice to C array
+</span></span></span><span class=line><span class=cl><span class=c1>// The C array is allocated in the C heap using malloc.
+</span></span></span><span class=line><span class=cl><span class=c1>// It is the caller&#39;s responsibility to arrange for it to be
+</span></span></span><span class=line><span class=cl><span class=c1>// freed, such as by calling C.free (be sure to include stdlib.h
+</span></span></span><span class=line><span class=cl><span class=c1>// if C.free is needed).
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nx>C</span><span class=p>.</span><span class=nf>CBytes</span><span class=p>([]</span><span class=kt>byte</span><span class=p>)</span> <span class=nx>unsafe</span><span class=p>.</span><span class=nx>Pointer</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// C string to Go string
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nx>C</span><span class=p>.</span><span class=nf>GoString</span><span class=p>(</span><span class=o>*</span><span class=nx>C</span><span class=p>.</span><span class=nx>char</span><span class=p>)</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// C data with explicit length to Go string
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nx>C</span><span class=p>.</span><span class=nf>GoStringN</span><span class=p>(</span><span class=o>*</span><span class=nx>C</span><span class=p>.</span><span class=nx>char</span><span class=p>,</span> <span class=nx>C</span><span class=p>.</span><span class=kt>int</span><span class=p>)</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// C data with explicit length to Go []byte
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nx>C</span><span class=p>.</span><span class=nf>GoBytes</span><span class=p>(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nx>Pointer</span><span class=p>,</span> <span class=nx>C</span><span class=p>.</span><span class=kt>int</span><span class=p>)</span> <span class=p>[]</span><span class=kt>byte</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li><code>C.CString</code>针对输入的Go字符串，克隆一个C语言格式的字符串；返回的字符串由C语言的<code>malloc</code>函数分配，不使用时需要通过C语言的<code>free</code>函数释放。</li><li><code>C.CBytes</code>函数的功能和<code>C.CString</code>类似，用于从输入的Go语言字节切片克隆一个C语言版本的字节数组，同样返回的数组需要在合适的时候释放。</li><li><code>C.GoString</code>用于将从NULL结尾的C语言字符串克隆一个Go语言字符串。</li><li><code>C.GoStringN</code>是另一个字符数组克隆函数。</li><li><code>C.GoBytes</code>用于从C语言数组，克隆一个Go语言字节切片。</li></ul><p>该组辅助函数都是以克隆的方式运行。当Go语言字符串和切片向C语言转换时，克隆的内存由C语言的<code>malloc</code>函数分配，最终可以通过<code>free</code>函数释放。当C语言字符串或数组向Go语言转换时，克隆的内存由Go语言分配管理。通过该组转换函数，转换前和转换后的内存依然在各自的语言环境中，它们并没有跨越Go语言和C语言。克隆方式实现转换的优点是接口和内存管理都很简单，缺点是克隆需要分配新的内存和复制操作都会导致额外的开销。</p><p>如果不希望单独分配内存，可以在Go语言中直接访问C语言的内存空间：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=cm>/*
+</span></span></span><span class=line><span class=cl><span class=cm>static char arr[10];
+</span></span></span><span class=line><span class=cl><span class=cm>static char *s = &#34;Hello&#34;;
+</span></span></span><span class=line><span class=cl><span class=cm>*/</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;C&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=s>&#34;fmt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 通过 reflect.SliceHeader 转换
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=kd>var</span> <span class=nx>arr0</span> <span class=p>[]</span><span class=kt>byte</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>arr0Hdr</span> <span class=p>=</span> <span class=p>(</span><span class=o>*</span><span class=nx>reflect</span><span class=p>.</span><span class=nx>SliceHeader</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>arr0</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=nx>arr0Hdr</span><span class=p>.</span><span class=nx>Data</span> <span class=p>=</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>C</span><span class=p>.</span><span class=nx>arr</span><span class=p>[</span><span class=mi>0</span><span class=p>]))</span>
+</span></span><span class=line><span class=cl>	<span class=nx>arr0Hdr</span><span class=p>.</span><span class=nx>Len</span> <span class=p>=</span> <span class=mi>10</span>
+</span></span><span class=line><span class=cl>	<span class=nx>arr0Hdr</span><span class=p>.</span><span class=nx>Cap</span> <span class=p>=</span> <span class=mi>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 通过切片语法转换
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>arr1</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=p>[</span><span class=mi>31</span><span class=p>]</span><span class=kt>byte</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>C</span><span class=p>.</span><span class=nx>arr</span><span class=p>[</span><span class=mi>0</span><span class=p>]))[:</span><span class=mi>10</span><span class=p>:</span><span class=mi>10</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>s0</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>s0Hdr</span> <span class=o>:=</span> <span class=p>(</span><span class=o>*</span><span class=nx>reflect</span><span class=p>.</span><span class=nx>StringHeader</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>s0</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s0Hdr</span><span class=p>.</span><span class=nx>Data</span> <span class=p>=</span> <span class=nb>uintptr</span><span class=p>(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nx>s</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s0Hdr</span><span class=p>.</span><span class=nx>Len</span> <span class=p>=</span> <span class=nb>int</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nf>strlen</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nx>s</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>sLen</span> <span class=o>:=</span> <span class=nb>int</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nf>strlen</span><span class=p>(</span><span class=nx>C</span><span class=p>.</span><span class=nx>s</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s1</span> <span class=o>:=</span> <span class=nb>string</span><span class=p>((</span><span class=o>*</span><span class=p>[</span><span class=mi>31</span><span class=p>]</span><span class=kt>byte</span><span class=p>)(</span><span class=nx>unsafe</span><span class=p>.</span><span class=nf>Pointer</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>C</span><span class=p>.</span><span class=nx>s</span><span class=p>[</span><span class=mi>0</span><span class=p>]))[:</span><span class=nx>sLen</span><span class=p>:</span><span class=nx>sLen</span><span class=p>])</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>在C语言中可以通过<code>GoString</code>和<code>GoSlice</code>来访问Go语言的字符串和切片。如果是Go语言中数组类型，可以将数组转为切片后再行转换。如果字符串或切片对应的底层内存空间由Go语言的运行时管理，那么在C语言中不能长时间保存Go内存对象。</p><ol start=5><li><strong>指针</strong></li></ol><p>在C语言中，不同类型的指针是可以显式或隐式转换的，如果是隐式只是会在编译时给出一些警告信息。但是Go语言对于不同类型的转换非常严格，任何C语言中可能出现的警告信息在Go语言中都可能是错误！指针是C语言的灵魂，指针间的自由转换也是cgo代码中经常要解决的第一个重要的问题。
+在Go语言中两个指针的类型完全一致则不需要转换可以直接通用。如果一个指针类型是用type命令在另一个指针类型基础之上构建的，换言之两个指针底层是相同完全结构的指针，那么我我们可以通过直接强制转换语法进行指针间的转换。但是cgo经常要面对的是2个完全不同类型的指针间的转换，原则上这种操作在纯Go语言代码是严格禁止的。
+cgo存在的一个目的就是打破Go语言的禁制，恢复C语言应有的指针的自由转换和指针运算。以下代码演示了如何将X类型的指针转化为Y类型的指针：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>var p *X
+</span></span><span class=line><span class=cl>var q *Y
+</span></span><span class=line><span class=cl>q = (*Y)(unsafe.Pointer(p)) // *X =&gt; *Y
+</span></span><span class=line><span class=cl>p = (*X)(unsafe.Pointer(q)) // *Y =&gt; *X
+</span></span></code></pre></td></tr></table></div></div><p>为了实现X类型指针到Y类型指针的转换，我们需要借助<code>unsafe.Pointer</code>作为中间桥接类型实现不同类型指针之间的转换。 <strong><code>unsafe.Pointer</code>指针类型类似C语言中的<code>void*</code>类型的指针。</strong>
+下面是指针间的转换流程的示意图：
+<a href=https://img.cntofu.com/book/advanced-go-programming-book/images/ch2-x-ptr-to-y-ptr.uml.png rel=noopener><img src="https://cdn.nlark.com/yuque/0/2021/png/12923798/1625553919754-0f454063-e695-4b61-bdb3-a73a450548bb.png#align=left&display=inline&height=330&originHeight=330&originWidth=356&size=0&status=done&style=none&width=356" width=auto alt></a>
+任何类型的指针都可以通过强制转换为<code>unsafe.Pointer</code>指针类型去掉原有的类型信息，然后再重新赋予新的指针类型而达到指针间的转换的目的。</p><ol start=6><li><strong>数值和指针的转换</strong></li></ol><p>不同类型指针间的转换看似复杂，但是在cgo中已经算是比较简单的了。在C语言中经常遇到用普通数值表示指针的场景，也就是说如何实现数值和指针的转换也是cgo需要面对的一个问题。
+为了严格控制指针的使用，Go语言禁止将数值类型直接转为指针类型！不过，Go语言针对<code>unsafe.Pointr</code>指针类型特别定义了一个uintptr类型。我们可以uintptr为中介，实现数值类型到<code>unsafe.Pointr</code>指针类型到转换。再结合前面提到的方法，就可以实现数值和指针的转换了。
+下面流程图演示了如何实现int32类型到C语言的<code>char*</code>字符串指针类型的相互转换：
+<a href=https://img.cntofu.com/book/advanced-go-programming-book/images/ch2-int32-to-char-ptr.uml.png rel=noopener><img src="https://cdn.nlark.com/yuque/0/2021/png/12923798/1625553919784-5ced2ca7-f5d4-43ee-a979-209ce120ccd9.png#align=left&display=inline&height=432&originHeight=432&originWidth=565&size=0&status=done&style=none&width=565" width=auto alt></a>
+转换分为几个阶段，在每个阶段实现一个小目标：首先是int32到uintptr类型，然后是uintptr到<code>unsafe.Pointr</code>指针类型，最后是<code>unsafe.Pointr</code>指针类型到<code>*C.char</code>类型。</p><ol start=7><li><strong>切片间的转换</strong></li></ol><p>在C语言中数组也一种指针，因此两个不同类型数组之间到转换和指针间转换基本类似。但是在Go语言中，数组或数组对应到切片都不再是指针类型，因为我们也就无法直接实现不同类型到切片之间的转换。
+不过Go语言的reflect包提供了切片类型到底层结构，再结合前面讨论到不同类型之间到指针转换技术就可以实现<code>[]X</code>和<code>[]Y</code>类型的切片转换：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>var p []X
+</span></span><span class=line><span class=cl>var q []Y
+</span></span><span class=line><span class=cl>pHdr := (*reflect.SliceHeader)(unsafe.Pointer(&amp;p))
+</span></span><span class=line><span class=cl>qHdr := (*reflect.SliceHeader)(unsafe.Pointer(&amp;q))
+</span></span><span class=line><span class=cl>pHdr.Data = qHdr.Data
+</span></span><span class=line><span class=cl>pHdr.Len = qHdr.Len * unsafe.Sizeof(q[0]) / unsafe.Sizeof(p[0])
+</span></span><span class=line><span class=cl>pHdr.Cap = qHdr.Cap * unsafe.Sizeof(q[0]) / unsafe.Sizeof(p[0])
+</span></span></code></pre></td></tr></table></div></div><p>不同切片类型之间转换到思路是先为构造一个空的目标切片，然后用原有的切片底层数据填充目标切片。如果X和Y类型的大小不同，需要重新设置Len和Cap属性。需要注意的是，如果X或Y是空类型，上述代码中可能导致除0错误，实际代码需要根据情况酌情处理。
+下面演示了切片间的转换的具体流程：
+<a href=https://img.cntofu.com/book/advanced-go-programming-book/images/ch2-x-slice-to-y-slice.uml.png rel=noopener><img src="https://cdn.nlark.com/yuque/0/2021/png/12923798/1625553919828-5bb37a41-ff69-4cc8-8e11-e5e69fa03575.png#align=left&display=inline&height=418&originHeight=418&originWidth=453&size=0&status=done&style=none&width=453" width=auto alt></a>
+针对CGO中常用的功能，作者封装了 &ldquo;github.com/chai2010/cgo&rdquo; 包，提供基本的转换功能，具体的细节可以参考实现代码。</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
