@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>C++ on</title><link>https://www.ryken.cloud/tags/C++/</link><description>Recent content in C++ on</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Fri, 05 May 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://www.ryken.cloud/tags/C++/index.xml" rel="self" type="application/rss+xml"/><item><title>epoll的LT模式与ET模式</title><link>https://www.ryken.cloud/epoll%E7%9A%84LT%E6%A8%A1%E5%BC%8F%E4%B8%8EET%E6%A8%A1%E5%BC%8F/</link><pubDate>Fri, 05 May 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/epoll%E7%9A%84LT%E6%A8%A1%E5%BC%8F%E4%B8%8EET%E6%A8%A1%E5%BC%8F/</guid><description>epoll的LT模式与ET模式哪个效率更高
+LT和ET的区别： LT对于存在未读完的数据，下一次调用epoll_wait还会触发， ET无论是否读完，只触发一次，直到下一次EPOLLIN事件到来
+LT的优点：易于编码，未读完的数据下次还能继续读，不易遗漏 ET的缺点：难以编码，需要一次读完，有时会遗漏
+LT的缺点：在并发量高的时候，epoll_wait返回的就绪队列比较大，遍历比较耗时。因此LT适用于并发量小的情况 ET的优点：并发量大的时候，就绪队列要比LT小得多，效率更高
+应用 使用ET的例子：nginx 使用LT的例子：redis 选取参考（nginx选用ET）
+看连接的空闲程度，连接的空闲程度很高就用ET，所以按照场景，http的客户端idel情况很高，用ET，如果是rpg的游戏服务器，用LT，ET差不多</description></item></channel></rss>
