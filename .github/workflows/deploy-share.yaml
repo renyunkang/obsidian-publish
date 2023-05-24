@@ -20,7 +20,7 @@ jobs:
 
       # content 
       - name: config1 
-        run: mv content/*.md content/.obsidian/ && find content/ -name "*.md" | xargs -I file  mv -f file content &&  mv content/AboutTheGarden.md content/_index.md 
+        run: mv content/*.md content/.obsidian/ && find content/ -name "*.md" | xargs -I file  mv -f file content &&  mv content/AboutTheGarden.md content/_index.md && rm content/README.md 
 
       - name: config2
         run: "ls content/ && grep -lr --null 'title' content/* | xargs -0 sed -i -E -r 's/title: (.*)/title: \"\\1\"/g'"
