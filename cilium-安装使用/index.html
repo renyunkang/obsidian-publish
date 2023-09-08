@@ -1,0 +1,234 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="遇到的问题：
+ 安装时 cluster name 不能含有 .   https://github.com/cilium/cilium-cli/issues/490 国内环境使用 cilium-cli 安装失败  拉取镜像失败，能否指定镜像拉取？ 换用 helm 安装
+1 2 3 4 5 6  helm repo add cilium https://helm."><title>cilium 安装使用</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.8e014c70f1a76d82f359455b0dec0ff3.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.db60ec08c11222eaa35844dff56d3a3f.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>cilium 安装使用</h1><p class=meta>最近编辑于
+Sep 8, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#kind-搭建环境>kind 搭建环境</a></li><li><a href=#ingress-支持>ingress 支持</a></li></ol></nav></details></aside><p>遇到的问题：</p><ol><li>安装时 cluster name 不能含有 .</li></ol><p><a href=https://github.com/cilium/cilium-cli/issues/490 rel=noopener>https://github.com/cilium/cilium-cli/issues/490</a>
+<img src="https://cdn.nlark.com/yuque/0/2022/png/12923798/1658073755703-cddfbeda-7862-49bc-a3fd-a32ea629b193.png#clientId=ub1901de8-9dbe-4&from=paste&height=212&id=ufa8a4a4b&originHeight=318&originWidth=1406&originalType=binary&ratio=1&rotation=0&showTitle=false&size=94240&status=done&style=none&taskId=uc4955aae-14d7-49e8-81bf-4411e9e93a9&title=&width=937.3333333333334" width=auto alt=image.png></p><ol start=2><li>国内环境使用 cilium-cli 安装失败</li></ol><p>拉取镜像失败，能否指定镜像拉取？
+换用 helm 安装</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=l>helm repo add cilium https://helm.cilium.io/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>helm install cilium cilium/cilium --version 1.11.6 \</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>--<span class=l>namespace kube-system \</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>--<span class=l>set ipam.mode=kubernetes \</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>--<span class=l>set cluster.id=2 \</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>--<span class=l>set cluster.name=cluster2</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>在c1 集群上安装 Cilium，使用 &ndash;kube-context 参数指定不同的集群上下文。必须为每个集群分配一个唯一的名称和集群 id，cluster.id 参数指定集群 id，范围 1-255，cluster.name 参数指定集群名称。
+<a href=https://github.com/cilium/cilium/blob/v1.11.6/install/kubernetes/cilium/values.yaml rel=noopener>https://github.com/cilium/cilium/blob/v1.11.6/install/kubernetes/cilium/values.yaml</a></p><p>使用的镜像：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=l>quay.io/cilium/cilium:v1.11.6@sha256:f7f93c26739b6641a3fa3d76b1e1605b15989f25d06625260099e01c8243f54c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>quay.io/cilium/operator-generic:v1.11.6@sha256:9f6063c7bcaede801a39315ec7c166309f6a6783e98665f6693939cf1701bc17</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>default-scheduler  0/3 nodes are available</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w> </span><span class=l>node(s) didn&#39;t match pod anti-affinity rules, 2 node(s) didn&#39;t match Pod&#39;s node affinity/selector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>// helm chart</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>https://github.com/cilium/cilium/blob/v1.11.6/install/kubernetes/cilium/values.yaml</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>验证安装：</p><ul><li>cilium status &ndash;wait</li><li>cilium connectivity test</li></ul><p><img src="https://cdn.nlark.com/yuque/0/2022/png/12923798/1658073870852-01bb5d19-f6a3-4150-9537-d754cb01d772.png#clientId=ub1901de8-9dbe-4&from=paste&height=770&id=u7c263e65&originHeight=1155&originWidth=1496&originalType=binary&ratio=1&rotation=0&showTitle=false&size=372774&status=done&style=none&taskId=uab7609cf-348a-4388-bc80-15aa83beaa2&title=&width=997.3333333333334" width=auto alt=image.png></p><ol start=3><li>安装成功 coredns 失败</li></ol><p><img src="https://cdn.nlark.com/yuque/0/2022/png/12923798/1658127907023-e20a0417-1a05-4ef2-953c-7039cf920021.png#clientId=ucb69972c-ee09-4&from=paste&height=450&id=u114d8a40&originHeight=675&originWidth=1672&originalType=binary&ratio=1&rotation=0&showTitle=false&size=277133&status=done&style=none&taskId=uc86c1326-33fc-45ca-a8e2-14c0c6e0aeb&title=&width=1114.6666666666667" width=auto alt=image.png>
+<img src="https://cdn.nlark.com/yuque/0/2022/png/12923798/1658129099482-cd93f954-1cf9-4665-af19-13404593c631.png#clientId=ucb69972c-ee09-4&from=paste&height=631&id=u557f921f&originHeight=947&originWidth=2079&originalType=binary&ratio=1&rotation=0&showTitle=false&size=339663&status=done&style=none&taskId=u283c6d09-dfc3-444e-9c40-c64a260a93a&title=&width=1386" width=auto alt=image.png></p><ol start=4><li>使用 kubekey 直接安装失败</li></ol><p><img src="https://cdn.nlark.com/yuque/0/2022/png/12923798/1658154624557-524e50a0-e02e-417a-95e0-3bfec07e34e7.png#clientId=u5a768cd4-1a94-4&from=paste&height=372&id=u23445172&originHeight=372&originWidth=1221&originalType=binary&ratio=1&rotation=0&showTitle=false&size=59550&status=done&style=none&taskId=uab683862-08bd-4765-b465-189ec387041&title=&width=1221" width=auto alt=image.png></p><ol start=5><li>使用 kind 在可以顺利连接外网的情况下，参考官网一次性安装成功</li></ol><p><strong>关于 CoreDns 最终的解决办法：</strong>
+<a href=https://github.com/cilium/cilium/issues/20498 rel=noopener>https://github.com/cilium/cilium/issues/20498</a>
+<img src="https://cdn.nlark.com/yuque/0/2022/png/12923798/1658225166694-d71b74f2-dc59-4d6f-bb65-12002f001750.png#clientId=u65a4b1bf-b85b-4&from=paste&height=425&id=u9ec1646c&originHeight=637&originWidth=1788&originalType=binary&ratio=1&rotation=0&showTitle=false&size=197311&status=done&style=none&taskId=ucf1b19c5-0307-4090-9595-39dc39b22d7&title=&width=1192" width=auto alt=image.png></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=l>cat /etc/sysctl.d/99-zzz-override_cilium.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Disable rp_filter on Cilium interfaces since it may cause mangled packets to be dropped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>net.ipv4.conf.lxc*.rp_filter = 0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>net.ipv4.conf.cilium_*.rp_filter = 0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># The kernel uses max(conf.all, conf.{dev}) as its value, so we need to set .all. to 0 as well.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Otherwise it will overrule the device specific settings.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>net.ipv4.conf.all.rp_filter = 0</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>1: lo</span><span class=p>:</span><span class=w> </span><span class=l>&lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet 127.0.0.1/8 scope host lo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet6 ::1/128 scope host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>2: eth0</span><span class=p>:</span><span class=w> </span><span class=l>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq state UP group default qlen 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/ether 52:54:65:78:09:05 brd ff:ff:ff:ff:ff:ff</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>altname enp0s9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>altname ens9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet 172.16.2.2/24 brd 172.16.2.255 scope global dynamic eth0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft 66040sec preferred_lft 66040sec</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet6 fe80::5054:65ff:fe78:905/64 scope link</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>3: docker0</span><span class=p>:</span><span class=w> </span><span class=l>&lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu 1500 qdisc noqueue state DOWN group default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/ether 02:42:19:3c:1b:91 brd ff:ff:ff:ff:ff:ff</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>4: cilium_net@cilium_host</span><span class=p>:</span><span class=w> </span><span class=l>&lt;BROADCAST,MULTICAST,NOARP,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/ether 96:9b:2d:8f:6f:c9 brd ff:ff:ff:ff:ff:ff</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet6 fe80::949b:2dff:fe8f:6fc9/64 scope link</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>5: cilium_host@cilium_net</span><span class=p>:</span><span class=w> </span><span class=l>&lt;BROADCAST,MULTICAST,NOARP,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/ether 4a:01:05:87:de:94 brd ff:ff:ff:ff:ff:ff</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet 10.0.0.47/32 scope link cilium_host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet6 fe80::4801:5ff:fe87:de94/64 scope link</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>6: cilium_vxlan</span><span class=p>:</span><span class=w> </span><span class=l>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/ether de:67:f9:1b:1f:94 brd ff:ff:ff:ff:ff:ff</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet6 fe80::dc67:f9ff:fe1b:1f94/64 scope link</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>8: lxc_health@if7</span><span class=p>:</span><span class=w> </span><span class=l>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UP group default qlen 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>link/ether 16:8b:bd:b3:ae:c1 brd ff:ff:ff:ff:ff:ff link-netnsid 0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>inet6 fe80::148b:bdff:feb3:aec1/64 scope link</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=l>valid_lft forever preferred_lft forever</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#kind-搭建环境><h2 id=kind-搭建环境><span class=hanchor arialabel=Anchor># </span>kind 搭建环境</h2></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>kind.x-k8s.io/v1alpha4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>nodes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>control-plane</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networking</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>disableDefaultCNI</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>kind create cluster &ndash;image kindest/node:latest
+kind delete cluster &ndash;name kind-2
+kind create cluster &ndash;config kind-example-config.yaml</p><a href=#ingress-支持><h2 id=ingress-支持><span class=hanchor arialabel=Anchor># </span>ingress 支持</h2></a><p>安装 no kube-proxy</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>kind.x-k8s.io/v1alpha4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>nodes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>control-plane</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networking</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>disableDefaultCNI</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kubeProxyMode</span><span class=p>:</span><span class=w> </span><span class=l>none</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><a href=https://medium.com/@charled.breteche/kind-cluster-with-cilium-and-no-kube-proxy-c6f4d84b5a9d rel=noopener>https://medium.com/@charled.breteche/kind-cluster-with-cilium-and-no-kube-proxy-c6f4d84b5a9d</a></p><p><code>helm install cilium cilium/cilium --version 1.12.0 --namespace kube-system --set kubeProxyReplacement=strict --set k8sServiceHost=kind-control-plane --set k8sServicePort=6443</code></p><p>helm install cilium cilium/cilium &ndash;version 1.11.6 &ndash;namespace kube-system &ndash;set hostServices.enabled=true &ndash;set k8sServiceHost=kind-control-plane &ndash;set k8sServicePort=6443 &ndash;set externalIPs.enabled=true &ndash;set nodePort.enabled=true &ndash;set hostPort.enabled=true &ndash;set image.pullPolicy=IfNotPresent &ndash;set ipam.mode=kubernetes &ndash;set</p><p>helm install cilium cilium/cilium &ndash;version 1.11.6 &ndash;namespace kube-system &ndash;set hostServices.enabled=true &ndash;set k8sServiceHost=kind-control-plane &ndash;set k8sServicePort=6443 &ndash;set externalIPs.enabled=true &ndash;set nodePort.enabled=true &ndash;set hostPort.enabled=true &ndash;set image.pullPolicy=IfNotPresent &ndash;set ipam.mode=kubernetes &ndash;set hubble.enabled=true &ndash;set hubble.relay.enabled=true &ndash;set hubble.ui.enabled=true &ndash;set hubble.ui.ingress.enabled=true &ndash;set hubble.ui.ingress.annotations=&ldquo;kubernetes.io/ingress.class: nginx&rdquo; &ndash;set hubble.ui.ingress.hosts[0]=hubble-ui.127.0.0.1.nip.io</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=l>root@node:~/CNI/cilium# helm install cilium cilium/cilium --version 1.11.6 --namespace kube-system --values - &lt;&lt; EOF</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kubeProxyReplacement</span><span class=p>:</span><span class=w> </span><span class=l>strict</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>k8sServiceHost</span><span class=p>:</span><span class=w> </span><span class=l>kind-control-plane</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>k8sServicePort</span><span class=p>:</span><span class=w> </span><span class=m>6443</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>hostServices</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>externalIPs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>nodePort</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>hostPort</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>image</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pullPolicy</span><span class=p>:</span><span class=w> </span><span class=l>IfNotPresent</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>ipam</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mode</span><span class=p>:</span><span class=w> </span><span class=l>kubernetes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>hubble</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>relay</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ui</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>kubernetes.io/ingress.class</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>hubble-ui.127.0.0.1.nip.io</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>EOF</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>cilium install &ndash;kube-proxy-replacement=strict &ndash;helm-set ingressController.enabled=true
+kind load docker-image hashicorp/http-echo:0.2.3</p><p>cilium install &ndash;version &ndash;config enable-envoy-config=<em>true</em> &ndash;kube-proxy-replacement=probe &ndash;datapath-mode=vxlan</p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
