@@ -1,0 +1,1005 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="kubernetes nodeipam 实现原理   基于 kubernetes v1.27.0 版本对 nodeipam controller 源码分析
+ 在 k8s 的 kube-controller-manager 中 nodeipam controller 是用来为 node 节点分配可用的 ip cidr 地址段的控制器, 每个 node 拿到的 cidr 地址范围不会冲突的."><title>源码分析 kubernetes nodeipam controller cidr 地址分配的实现原理</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.cbe93db93a7b18e6c6e4870cee51eac7.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.b18ac743a791f6ce4f44103553f2e9e1.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>源码分析 kubernetes nodeipam controller cidr 地址分配的实现原理</h1><p class=meta>最近编辑于
+Nov 2, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#实例化入口>实例化入口</a></li><li><a href=#启动入口>启动入口</a></li><li><a href=#cidr-allocator-分配器的原理>cidr allocator 分配器的原理</a><ol><li><a href=#创建-cidrallocator-实例的入口>创建 CIDRAllocator 实例的入口</a></li><li><a href=#rangeallocator-的实现原理>rangeAllocator 的实现原理</a></li><li><a href=#nodeinformer-eventhandler-方法的实现>nodeinformer eventHandler 方法的实现</a></li><li><a href=#cidrset-的设计实现原理>cidrset 的设计实现原理</a></li></ol></li><li><a href=#总结>总结</a></li></ol></nav></details></aside><a href=#kubernetes-nodeipam-实现原理><h1 id=kubernetes-nodeipam-实现原理><span class=hanchor arialabel=Anchor># </span>kubernetes nodeipam 实现原理</h1></a><p><img src=https://images.ryken.cloud/2023/11/86e626eb3b0acb0b1314d059e27deb10.png width=auto alt=image.png></p><blockquote><p>基于 kubernetes v1.27.0 版本对 nodeipam controller 源码分析</p></blockquote><p>在 k8s 的 <code>kube-controller-manager</code> 中 <code>nodeipam controller</code> 是用来为 node 节点分配可用的 ip cidr 地址段的控制器, 每个 node 拿到的 cidr 地址范围不会冲突的. 在为 node 分配地址段后, k8s kubelet 根据 node 关联的 cidr 地址段来为 pod 添加 ip 地址, 这里的又涉及到 cni 网络插件的调用, 后面再做分析.</p><p><img src=https://images.ryken.cloud/2023/11/686389778df87031cee2e6febc8f83f8.png width=auto alt=image.png></p><p>这里分析下 kubernetes nodeipam controller 控制器的流程原理. nodeipam controller 控制器启动时通过 <code>--cluster-cidr</code>, <code>--node-cidr-mask-size</code> 和 <code>--cidr-allocator-type</code> 等参数生成 cidr 地址段生成器. 控制器内部又会启动 node informer 来监听 node 对象资源变化, 当触发 node 新增事件时, 为 node 申请分配 cidr 地址段, 然后向 apiserver 请求更新 node podcidrs 配置信息, 当触发删除事件时, 则释放这些 ip cidr 地址段.</p><p>nodeipam 只负责 pod cidr 地址, 至于 service clusterIP cidr 是在 apiserver 负责的.</p><a href=#实例化入口><h2 id=实例化入口><span class=hanchor arialabel=Anchor># </span>实例化入口</h2></a><p>实例化 <code>nodeIpamController</code> 控制器, allocatorType 分配器类型通过 <code>--cidr-allocator-type</code> 参数指定, 其默认值为 <code>RangeAllocator</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>NewNodeIpamController</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>	<span class=o>...</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>Controller</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 判空
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>kubeClient</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>klog</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;kubeClient is nil when starting Controller&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// cloud 分配模式必须首先需要确保 cidr 段不为空, 然后判断 masksize 是否合法.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>allocatorType</span> <span class=o>!=</span> <span class=nx>ipam</span><span class=p>.</span><span class=nx>CloudAllocatorType</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>clusterCIDRs</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>klog</span><span class=p>.</span><span class=nf>Fatal</span><span class=p>(</span><span class=s>&#34;Controller: Must specify --cluster-cidr if --allocate-node-cidrs is set&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=k>for</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>clusterCIDRs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>mask</span> <span class=o>:=</span> <span class=nx>cidr</span><span class=p>.</span><span class=nx>Mask</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>maskSize</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>mask</span><span class=p>.</span><span class=nf>Size</span><span class=p>();</span> <span class=nx>maskSize</span> <span class=p>&gt;</span> <span class=nx>nodeCIDRMaskSizes</span><span class=p>[</span><span class=nx>idx</span><span class=p>]</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=o>...</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 实例化 ipam controller 控制器对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ic</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>Controller</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>cloud</span><span class=p>:</span>                <span class=nx>cloud</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>kubeClient</span><span class=p>:</span>           <span class=nx>kubeClient</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>eventBroadcaster</span><span class=p>:</span>     <span class=nx>record</span><span class=p>.</span><span class=nf>NewBroadcaster</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>		<span class=nx>lookupIP</span><span class=p>:</span>             <span class=nx>net</span><span class=p>.</span><span class=nx>LookupIP</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>clusterCIDRs</span><span class=p>:</span>         <span class=nx>clusterCIDRs</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>serviceCIDR</span><span class=p>:</span>          <span class=nx>serviceCIDR</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>secondaryServiceCIDR</span><span class=p>:</span> <span class=nx>secondaryServiceCIDR</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>allocatorType</span><span class=p>:</span>        <span class=nx>allocatorType</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 根据 allocator 的 type 实例化不同的 cidr allocator 分配器
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>ic</span><span class=p>.</span><span class=nx>allocatorType</span> <span class=o>==</span> <span class=nx>ipam</span><span class=p>.</span><span class=nx>IPAMFromClusterAllocatorType</span> <span class=o>||</span> <span class=nx>ic</span><span class=p>.</span><span class=nx>allocatorType</span> <span class=o>==</span> <span class=nx>ipam</span><span class=p>.</span><span class=nx>IPAMFromCloudAllocatorType</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ic</span><span class=p>.</span><span class=nx>legacyIPAM</span> <span class=p>=</span> <span class=nf>createLegacyIPAM</span><span class=p>(</span><span class=nx>ic</span><span class=p>,</span> <span class=nx>nodeInformer</span><span class=p>,</span> <span class=nx>cloud</span><span class=p>,</span> <span class=nx>kubeClient</span><span class=p>,</span> <span class=nx>clusterCIDRs</span><span class=p>,</span> <span class=nx>serviceCIDR</span><span class=p>,</span> <span class=nx>nodeCIDRMaskSizes</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 构建 ip 分配器的参数
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>allocatorParams</span> <span class=o>:=</span> <span class=nx>ipam</span><span class=p>.</span><span class=nx>CIDRAllocatorParams</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>ClusterCIDRs</span><span class=p>:</span>         <span class=nx>clusterCIDRs</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>ServiceCIDR</span><span class=p>:</span>          <span class=nx>ic</span><span class=p>.</span><span class=nx>serviceCIDR</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>SecondaryServiceCIDR</span><span class=p>:</span> <span class=nx>ic</span><span class=p>.</span><span class=nx>secondaryServiceCIDR</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>NodeCIDRMaskSizes</span><span class=p>:</span>    <span class=nx>nodeCIDRMaskSizes</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 实例化 ip cidr 分配器
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>ic</span><span class=p>.</span><span class=nx>cidrAllocator</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>ipam</span><span class=p>.</span><span class=nf>New</span><span class=p>(</span><span class=nx>kubeClient</span><span class=p>,</span> <span class=nx>cloud</span><span class=p>,</span> <span class=nx>nodeInformer</span><span class=p>,</span> <span class=nx>clusterCIDRInformer</span><span class=p>,</span> <span class=nx>ic</span><span class=p>.</span><span class=nx>allocatorType</span><span class=p>,</span> <span class=nx>allocatorParams</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 赋值 node informer lister
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ic</span><span class=p>.</span><span class=nx>nodeLister</span> <span class=p>=</span> <span class=nx>nodeInformer</span><span class=p>.</span><span class=nf>Lister</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=nx>ic</span><span class=p>.</span><span class=nx>nodeInformerSynced</span> <span class=p>=</span> <span class=nx>nodeInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nx>HasSynced</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>ic</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#启动入口><h2 id=启动入口><span class=hanchor arialabel=Anchor># </span>启动入口</h2></a><p>启动 ipam 控制器, 内部根据分配类型启动不同的 cidr 分配器, 本文暂不分析 cloud 相关的分配器.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>nc</span> <span class=o>*</span><span class=nx>Controller</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Starting ipam controller&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Shutting down ipam controller&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 等待 nodeinfomrer 数据同步到本地
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=p>!</span><span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForNamedCacheSync</span><span class=p>(</span><span class=s>&#34;node&#34;</span><span class=p>,</span> <span class=nx>stopCh</span><span class=p>,</span> <span class=nx>nc</span><span class=p>.</span><span class=nx>nodeInformerSynced</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 根据分配类型启动不同的分配器.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>nc</span><span class=p>.</span><span class=nx>allocatorType</span> <span class=o>==</span> <span class=nx>ipam</span><span class=p>.</span><span class=nx>IPAMFromClusterAllocatorType</span> <span class=o>||</span> <span class=nx>nc</span><span class=p>.</span><span class=nx>allocatorType</span> <span class=o>==</span> <span class=nx>ipam</span><span class=p>.</span><span class=nx>IPAMFromCloudAllocatorType</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>go</span> <span class=nx>nc</span><span class=p>.</span><span class=nx>legacyIPAM</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 启动 cidr 分配器
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>go</span> <span class=nx>nc</span><span class=p>.</span><span class=nx>cidrAllocator</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=o>&lt;-</span><span class=nx>stopCh</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#cidr-allocator-分配器的原理><h2 id=cidr-allocator-分配器的原理><span class=hanchor arialabel=Anchor># </span>cidr allocator 分配器的原理</h2></a><a href=#创建-cidrallocator-实例的入口><h3 id=创建-cidrallocator-实例的入口><span class=hanchor arialabel=Anchor># </span>创建 CIDRAllocator 实例的入口</h3></a><p>下面为 cidrAllocator 实例的创建入口, 篇幅原因只分析 <code>RangeAllocator</code> 类型.</p><p>代码位置: <code>pkg/controller/nodeipam/ipam/cidr_allocator.go</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>New</span><span class=p>(</span><span class=o>...</span><span class=p>)</span> <span class=p>(</span><span class=nx>CIDRAllocator</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 获取所有的 node 列表
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>nodeList</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>listNodes</span><span class=p>(</span><span class=nx>kubeClient</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 根据 allocator 类型实例化 cidr 分配器
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>switch</span> <span class=nx>allocatorType</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>RangeAllocatorType</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// RangeAllocator 为默认分配类型.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>return</span> <span class=nf>NewCIDRRangeAllocator</span><span class=p>(</span><span class=nx>kubeClient</span><span class=p>,</span> <span class=nx>nodeInformer</span><span class=p>,</span> <span class=nx>allocatorParams</span><span class=p>,</span> <span class=nx>nodeList</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>MultiCIDRRangeAllocatorType</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nf>NewMultiCIDRRangeAllocator</span><span class=p>(</span><span class=nx>kubeClient</span><span class=p>,</span> <span class=nx>nodeInformer</span><span class=p>,</span> <span class=nx>clusterCIDRInformer</span><span class=p>,</span> <span class=nx>allocatorParams</span><span class=p>,</span> <span class=nx>nodeList</span><span class=p>,</span> <span class=kc>nil</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>CloudAllocatorType</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nf>NewCloudCIDRAllocator</span><span class=p>(</span><span class=nx>kubeClient</span><span class=p>,</span> <span class=nx>cloud</span><span class=p>,</span> <span class=nx>nodeInformer</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;invalid CIDR allocator type: %v&#34;</span><span class=p>,</span> <span class=nx>allocatorType</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#rangeallocator-的实现原理><h3 id=rangeallocator-的实现原理><span class=hanchor arialabel=Anchor># </span>rangeAllocator 的实现原理</h3></a><p>代码位置: <code>pkg/controller/nodeipam/ipam/range_allocator.go</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>NewCIDRRangeAllocator</span><span class=p>(</span><span class=nx>client</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>nodeInformer</span> <span class=nx>informers</span><span class=p>.</span><span class=nx>NodeInformer</span><span class=p>,</span> <span class=nx>allocatorParams</span> <span class=nx>CIDRAllocatorParams</span><span class=p>,</span> <span class=nx>nodeList</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>NodeList</span><span class=p>)</span> <span class=p>(</span><span class=nx>CIDRAllocator</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 遍历配置中的 cidrs 列表, 生成 cidrset 对象放到集合中.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>cidrSets</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>([]</span><span class=o>*</span><span class=nx>cidrset</span><span class=p>.</span><span class=nx>CidrSet</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>allocatorParams</span><span class=p>.</span><span class=nx>ClusterCIDRs</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>allocatorParams</span><span class=p>.</span><span class=nx>ClusterCIDRs</span> <span class=p>{</span> 
+</span></span><span class=line><span class=cl>		<span class=c1>// cidr 只有 ip 和子网, 通过参数 cidr 生成 cidr set 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>cidrSet</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>cidrset</span><span class=p>.</span><span class=nf>NewCIDRSet</span><span class=p>(</span><span class=nx>cidr</span><span class=p>,</span> <span class=nx>allocatorParams</span><span class=p>.</span><span class=nx>NodeCIDRMaskSizes</span><span class=p>[</span><span class=nx>idx</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=nx>cidrSets</span><span class=p>[</span><span class=nx>idx</span><span class=p>]</span> <span class=p>=</span> <span class=nx>cidrSet</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>ra</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>rangeAllocator</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// kube client
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>client</span><span class=p>:</span>                <span class=nx>client</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 参数信息
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>clusterCIDRs</span><span class=p>:</span>          <span class=nx>allocatorParams</span><span class=p>.</span><span class=nx>ClusterCIDRs</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// cidr 配置集合
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>cidrSets</span><span class=p>:</span>              <span class=nx>cidrSets</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// node lister
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>nodeLister</span><span class=p>:</span>            <span class=nx>nodeInformer</span><span class=p>.</span><span class=nf>Lister</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 异步通知给 worker 协程, 请求 apiserver 更新 node 对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>nodeCIDRUpdateChannel</span><span class=p>:</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=nx>nodeReservedCIDRs</span><span class=p>,</span> <span class=nx>cidrUpdateQueueSize</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 用来处理并发
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>nodesInProcessing</span><span class=p>:</span>     <span class=nx>sets</span><span class=p>.</span><span class=nf>NewString</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果有配置 service 专用的 cidr 段, 则进行配置.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>allocatorParams</span><span class=p>.</span><span class=nx>ServiceCIDR</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ra</span><span class=p>.</span><span class=nf>filterOutServiceRange</span><span class=p>(</span><span class=nx>allocatorParams</span><span class=p>.</span><span class=nx>ServiceCIDR</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>klog</span><span class=p>.</span><span class=nf>V</span><span class=p>(</span><span class=mi>0</span><span class=p>).</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;No Service CIDR provided. Skipping filtering out service addresses.&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>nodeList</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 遍历当前的所有 node 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>node</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>nodeList</span><span class=p>.</span><span class=nx>Items</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 如果 node podcidrs 为空, 说明没有配置过可直接忽略.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>continue</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=c1>// 如果当前 node 有分配过 pods cidrs 范围,  则需要占位处理.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>ra</span><span class=p>.</span><span class=nf>occupyCIDRs</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>node</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// nodeinformer 注册 eventHandler 事件方法.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>nodeInformer</span><span class=p>.</span><span class=nf>Informer</span><span class=p>().</span><span class=nf>AddEventHandler</span><span class=p>(</span><span class=nx>cache</span><span class=p>.</span><span class=nx>ResourceEventHandlerFuncs</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 当有新 node 上来时, 进行分配
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>AddFunc</span><span class=p>:</span> <span class=nx>controllerutil</span><span class=p>.</span><span class=nf>CreateAddNodeHandler</span><span class=p>(</span><span class=nx>ra</span><span class=p>.</span><span class=nx>AllocateOrOccupyCIDR</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 当 node 对象发生变更时, 且 PodCIDRs 段为空时才分配 cidr 段.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>UpdateFunc</span><span class=p>:</span> <span class=nx>controllerutil</span><span class=p>.</span><span class=nf>CreateUpdateNodeHandler</span><span class=p>(</span><span class=kd>func</span><span class=p>(</span><span class=nx>_</span><span class=p>,</span> <span class=nx>newNode</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>newNode</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>return</span> <span class=nx>ra</span><span class=p>.</span><span class=nf>AllocateOrOccupyCIDR</span><span class=p>(</span><span class=nx>newNode</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>		<span class=p>}),</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 当 node 被清理时, 尝试释放其关联的 pod cidrs.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>DeleteFunc</span><span class=p>:</span> <span class=nx>controllerutil</span><span class=p>.</span><span class=nf>CreateDeleteNodeHandler</span><span class=p>(</span><span class=nx>ra</span><span class=p>.</span><span class=nx>ReleaseCIDR</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>	<span class=p>})</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>ra</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>启动 <code>rangeAllocator</code> 分配器, 内部启动 30 个协程 worker 去处理 node cidr 的信息更新. worker 内部从 <code>nodeCIDRUpdateChannel</code> 管道消费事件, 并调用 <code>updateCIDRsAllocation</code> 向 apiserver 更新 node cidr 地址段的关系.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>const</span> <span class=nx>cidrUpdateWorkers</span> <span class=p>=</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>r</span> <span class=o>*</span><span class=nx>rangeAllocator</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>stopCh</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Starting range CIDR allocator&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>klog</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Shutting down range CIDR allocator&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=p>!</span><span class=nx>cache</span><span class=p>.</span><span class=nf>WaitForNamedCacheSync</span><span class=p>(</span><span class=s>&#34;cidrallocator&#34;</span><span class=p>,</span> <span class=nx>stopCh</span><span class=p>,</span> <span class=nx>r</span><span class=p>.</span><span class=nx>nodesSynced</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 启动 30 个协程处理 worker 方法.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=nx>cidrUpdateWorkers</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>go</span> <span class=nx>r</span><span class=p>.</span><span class=nf>worker</span><span class=p>(</span><span class=nx>stopCh</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=o>&lt;-</span><span class=nx>stopCh</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>r</span> <span class=o>*</span><span class=nx>rangeAllocator</span><span class=p>)</span> <span class=nf>worker</span><span class=p>(</span><span class=nx>stopChan</span> <span class=o>&lt;-</span><span class=kd>chan</span> <span class=kd>struct</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=nx>workItem</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>r</span><span class=p>.</span><span class=nx>nodeCIDRUpdateChannel</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>return</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=c1>// 已经为 node 分配 cidr 地址段, 调用方法向 apiserver 更新 node 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>r</span><span class=p>.</span><span class=nf>updateCIDRsAllocation</span><span class=p>(</span><span class=nx>workItem</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// 如果更新发生失败, 则重新入队
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=nx>r</span><span class=p>.</span><span class=nx>nodeCIDRUpdateChannel</span> <span class=o>&lt;-</span> <span class=nx>workItem</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>stopChan</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>updateCIDRsAllocation</code> 方法把更新的 node spec.PodCIDRs 信息更新到 apiserver 上.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>r</span> <span class=o>*</span><span class=nx>rangeAllocator</span><span class=p>)</span> <span class=nf>updateCIDRsAllocation</span><span class=p>(</span><span class=nx>data</span> <span class=nx>nodeReservedCIDRs</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果 node 的 PodCIDRs 跟分配的指标一样, 则直接跳出
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=o>==</span> <span class=nb>len</span><span class=p>(</span><span class=nx>data</span><span class=p>.</span><span class=nx>allocatedCIDRs</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>match</span> <span class=o>:=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>		<span class=k>for</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>cidrsString</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>[</span><span class=nx>idx</span><span class=p>]</span> <span class=o>!=</span> <span class=nx>cidr</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>match</span> <span class=p>=</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl>				<span class=k>break</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>match</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>klog</span><span class=p>.</span><span class=nf>V</span><span class=p>(</span><span class=mi>4</span><span class=p>).</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Node %v already has allocated CIDR %v. It matches the proposed one.&#34;</span><span class=p>,</span> <span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>,</span> <span class=nx>data</span><span class=p>.</span><span class=nx>allocatedCIDRs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果 node 的 cidr 不为空, 则需要在地址生成器里清理相关的 cidr 地址段.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=o>!=</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>for</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>data</span><span class=p>.</span><span class=nx>allocatedCIDRs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 尝试清理
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=nx>releaseErr</span> <span class=o>:=</span> <span class=nx>r</span><span class=p>.</span><span class=nx>cidrSets</span><span class=p>[</span><span class=nx>idx</span><span class=p>].</span><span class=nf>Release</span><span class=p>(</span><span class=nx>cidr</span><span class=p>);</span> <span class=nx>releaseErr</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Error when releasing CIDR idx:%v value: %v err:%v&#34;</span><span class=p>,</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span><span class=p>,</span> <span class=nx>releaseErr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 尝试向 apiserver 更新 node cidrs 信息.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=nx>cidrUpdateRetries</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>nodeutil</span><span class=p>.</span><span class=nf>PatchNodeCIDRs</span><span class=p>(</span><span class=nx>r</span><span class=p>.</span><span class=nx>client</span><span class=p>,</span> <span class=nx>types</span><span class=p>.</span><span class=nf>NodeName</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>),</span> <span class=nx>cidrsString</span><span class=p>);</span> <span class=nx>err</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 当请求访问 apiserver 发生超时时, 主动释放下 cidr 地址段.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=p>!</span><span class=nx>apierrors</span><span class=p>.</span><span class=nf>IsServerTimeout</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>for</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>data</span><span class=p>.</span><span class=nx>allocatedCIDRs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>releaseErr</span> <span class=o>:=</span> <span class=nx>r</span><span class=p>.</span><span class=nx>cidrSets</span><span class=p>[</span><span class=nx>idx</span><span class=p>].</span><span class=nf>Release</span><span class=p>(</span><span class=nx>cidr</span><span class=p>);</span> <span class=nx>releaseErr</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>klog</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Error releasing allocated CIDR for node %v: %v&#34;</span><span class=p>,</span> <span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>,</span> <span class=nx>releaseErr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果 apiserver 更新 node cidrs 失败时, 则返回错误, 由调用方 worker 重写入队.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=c1>// 不会丢失
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>return</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#nodeinformer-eventhandler-方法的实现><h3 id=nodeinformer-eventhandler-方法的实现><span class=hanchor arialabel=Anchor># </span>nodeinformer eventHandler 方法的实现</h3></a><p><code>AllocateOrOccupyCIDR</code> 方法用来为 node 新申请分配和占位 cidr.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>r</span> <span class=o>*</span><span class=nx>rangeAllocator</span><span class=p>)</span> <span class=nf>AllocateOrOccupyCIDR</span><span class=p>(</span><span class=nx>node</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 防御式编程
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>node</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 规避并发问题, 使用 nodesInProcessing set 集合避免并发处理同一个 node 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=p>!</span><span class=nx>r</span><span class=p>.</span><span class=nf>insertNodeToProcessing</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果 node 对象中 PodCIDRs 不为空, 则对 node 所属的 cidrs ip范围进行关联占用.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=p>&gt;</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>r</span><span class=p>.</span><span class=nf>occupyCIDRs</span><span class=p>(</span><span class=nx>node</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>allocated</span> <span class=o>:=</span> <span class=nx>nodeReservedCIDRs</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>nodeName</span><span class=p>:</span>       <span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>allocatedCIDRs</span><span class=p>:</span> <span class=nb>make</span><span class=p>([]</span><span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=nx>r</span><span class=p>.</span><span class=nx>cidrSets</span><span class=p>)),</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=nx>idx</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>r</span><span class=p>.</span><span class=nx>cidrSets</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 从对应的 cidr 集合里分配
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>podCIDR</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>r</span><span class=p>.</span><span class=nx>cidrSets</span><span class=p>[</span><span class=nx>idx</span><span class=p>].</span><span class=nf>AllocateNext</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 如果有异常则在 nodesInProcessing 集合中删除
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>r</span><span class=p>.</span><span class=nf>removeNodeFromProcessing</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to allocate cidr from cluster cidr at idx:%v: %v&#34;</span><span class=p>,</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=nx>allocated</span><span class=p>.</span><span class=nx>allocatedCIDRs</span><span class=p>[</span><span class=nx>idx</span><span class=p>]</span> <span class=p>=</span> <span class=nx>podCIDR</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 上面的逻辑只是为 node 申请分配 cidr 地址段
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=c1>// 而具体更新 node 对象信息则是异步由 worker 协程处理.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>r</span><span class=p>.</span><span class=nx>nodeCIDRUpdateChannel</span> <span class=o>&lt;-</span> <span class=nx>allocated</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>ReleaseCIDR</code> 方法是用来释放 cidr 地址段, 在 ipam controller 里只有 node 资源对象被清理后, 才会调用 <code>ReleaseCIDR</code> 来释放 cidr 地址段.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>r</span> <span class=o>*</span><span class=nx>rangeAllocator</span><span class=p>)</span> <span class=nf>ReleaseCIDR</span><span class=p>(</span><span class=nx>node</span> <span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 当 podCIDRs 为空时, 说明已经被释放过了.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>node</span> <span class=o>==</span> <span class=kc>nil</span> <span class=o>||</span> <span class=nb>len</span><span class=p>(</span><span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 遍历当前 node 的 podCIDRS 配置项.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>for</span> <span class=nx>idx</span><span class=p>,</span> <span class=nx>cidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>node</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 把 cidr stirng 格式转换为 *net.IPNet
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>_</span><span class=p>,</span> <span class=nx>podCIDR</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netutils</span><span class=p>.</span><span class=nf>ParseCIDRSloppy</span><span class=p>(</span><span class=nx>cidr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to parse CIDR %s on Node %v: %v&#34;</span><span class=p>,</span> <span class=nx>cidr</span><span class=p>,</span> <span class=nx>node</span><span class=p>.</span><span class=nx>Name</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=o>...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 释放 cidr 地址段
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>if</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>r</span><span class=p>.</span><span class=nx>cidrSets</span><span class=p>[</span><span class=nx>idx</span><span class=p>].</span><span class=nf>Release</span><span class=p>(</span><span class=nx>podCIDR</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;error when releasing CIDR %v: %v&#34;</span><span class=p>,</span> <span class=nx>cidr</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#cidrset-的设计实现原理><h3 id=cidrset-的设计实现原理><span class=hanchor arialabel=Anchor># </span>cidrset 的设计实现原理</h3></a><p><code>CidrSet</code> 是用来实现申请分配新的 cidr, 释放老的 cidr 和占位已存在 cidr 地址段的类.</p><p>源码位置: <code>pkg/controller/nodeipam/ipam/cidrset/cidr_set.go</code></p><a href=#实例化-cidrset-地址计算器><h4 id=实例化-cidrset-地址计算器><span class=hanchor arialabel=Anchor># </span>实例化 cidrset 地址计算器</h4></a><p><code>NewCIDRSet</code> 里需要使用 <code>getMaxCIDRs</code> 计算出 clusterCIDR 地址段按照 <code>subNetMaskSize</code> 切分, 可以给 node 分配 cidr 的个数.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>NewCIDRSet</span><span class=p>(</span><span class=nx>clusterCIDR</span> <span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span><span class=p>,</span> <span class=nx>subNetMaskSize</span> <span class=kt>int</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>CidrSet</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>clusterMask</span> <span class=o>:=</span> <span class=nx>clusterCIDR</span><span class=p>.</span><span class=nx>Mask</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 获取 clusterCIDR 的子网掩码
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>clusterMaskSize</span><span class=p>,</span> <span class=nx>bits</span> <span class=o>:=</span> <span class=nx>clusterMask</span><span class=p>.</span><span class=nf>Size</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 地址为空或者掩码相减大于 16, 子网配置不合理, 大家可以算下.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=p>(</span><span class=nx>clusterCIDR</span><span class=p>.</span><span class=nx>IP</span><span class=p>.</span><span class=nf>To4</span><span class=p>()</span> <span class=o>==</span> <span class=kc>nil</span><span class=p>)</span> <span class=o>&amp;&amp;</span> <span class=p>(</span><span class=nx>subNetMaskSize</span><span class=o>-</span><span class=nx>clusterMaskSize</span> <span class=p>&gt;</span> <span class=nx>clusterSubnetMaxDiff</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>ErrCIDRSetSubNetTooBig</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=o>...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 计算出 cidr 地址段的个数
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>maxCIDRs</span> <span class=o>:=</span> <span class=nf>getMaxCIDRs</span><span class=p>(</span><span class=nx>subNetMaskSize</span><span class=p>,</span> <span class=nx>clusterMaskSize</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>cidrSet</span> <span class=o>:=</span> <span class=o>&amp;</span><span class=nx>CidrSet</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>clusterCIDR</span><span class=p>:</span>     <span class=nx>clusterCIDR</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>nodeMask</span><span class=p>:</span>        <span class=nx>net</span><span class=p>.</span><span class=nf>CIDRMask</span><span class=p>(</span><span class=nx>subNetMaskSize</span><span class=p>,</span> <span class=nx>bits</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>		<span class=nx>clusterMaskSize</span><span class=p>:</span> <span class=nx>clusterMaskSize</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>maxCIDRs</span><span class=p>:</span>        <span class=nx>maxCIDRs</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>nodeMaskSize</span><span class=p>:</span>    <span class=nx>subNetMaskSize</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>label</span><span class=p>:</span>           <span class=nx>clusterCIDR</span><span class=p>.</span><span class=nf>String</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>cidrSet</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>通过下面的例子分析下 <code>getMaxCIDRs</code> 过程. 比如 clusetrCIDR 参数为 <code>10.0.0.0/16</code>, 主机子网大小为 <code>24</code>, 那么通过 <code>getMaxCIDRs(24, 16)</code> 可以拿到的 256 个 cidr 配置段 (0-255), 每个 cidr 可以分配 254 个地址 (0 为网络号, 255 为广播地址). k8s node 默认下可以开 110 个 pod, 这个 cidr 地址是足够了.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>	<span class=s>&#34;fmt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>netutils</span> <span class=s>&#34;k8s.io/utils/net&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>cidr</span> <span class=o>:=</span> <span class=s>&#34;10.0.0.0/16&#34;</span>
+</span></span><span class=line><span class=cl>	<span class=nx>_</span><span class=p>,</span> <span class=nx>clusterCIDR</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>netutils</span><span class=p>.</span><span class=nf>ParseCIDRSloppy</span><span class=p>(</span><span class=nx>cidr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;clusterCIDR:&#34;</span><span class=p>,</span> <span class=nx>clusterCIDR</span><span class=p>.</span><span class=nf>String</span><span class=p>())</span> <span class=c1>// output: 10.0.0.0/16
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>	<span class=nx>clusterMaskSize</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>clusterCIDR</span><span class=p>.</span><span class=nx>Mask</span><span class=p>.</span><span class=nf>Size</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;clusterMaskSize: &#34;</span><span class=p>,</span> <span class=nx>clusterMaskSize</span><span class=p>)</span> <span class=c1>// output: 16
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>	<span class=nx>max</span> <span class=o>:=</span> <span class=nf>getMaxCIDRs</span><span class=p>(</span><span class=mi>24</span><span class=p>,</span> <span class=nx>clusterMaskSize</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>fmt</span><span class=p>.</span><span class=nf>Println</span><span class=p>(</span><span class=s>&#34;getMaxCIDRs:&#34;</span><span class=p>,</span> <span class=nx>max</span><span class=p>)</span> <span class=c1>// output: 256
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>getMaxCIDRs</span><span class=p>(</span><span class=nx>subNetMaskSize</span><span class=p>,</span> <span class=nx>clusterMaskSize</span> <span class=kt>int</span><span class=p>)</span> <span class=kt>int</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=mi>1</span> <span class=o>&lt;&lt;</span> <span class=nb>uint32</span><span class=p>(</span><span class=nx>subNetMaskSize</span><span class=o>-</span><span class=nx>clusterMaskSize</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>ipam 代码中有不少子网掩码换算和子网划分等地址换算的调用, 这需要一定的网络基础知识才方便理解.</p><a href=#申请-cidr-地址段-allocatenext><h4 id=申请-cidr-地址段-allocatenext><span class=hanchor arialabel=Anchor># </span>申请 cidr 地址段 (AllocateNext)</h4></a><p><code>AllocateNext</code> 方法用来申请分配可用的 cidr 地址段. <code>used</code> 类型是 <code>bit.Int</code>, 其目的通过 bitmap 结构来标记 cidr 是否被分配.</p><p>比如通过 getMaxCIDRs 得出当前最多可以分配 256 个 cidr 地址段, 把已经分配过的 cidr 段在 used bitmap 对应位置标记为 1, 没被分配过的 cidr 标记为 0.</p><p><img src=https://www.ryken.cloud// width=auto alt="Uploading file&amp;hellip;9bht1"></p><p><img src=https://xiaorui-cc.oss-cn-hangzhou.aliyuncs.com/images/202301/202301191554583.png width=auto alt></p><p>代码位置: <code>pkg/controller/nodeipam/ipam/cidrset/cidr_set.go</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>CidrSet</span><span class=p>)</span> <span class=nf>AllocateNext</span><span class=p>()</span> <span class=p>(</span><span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>s</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>s</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果当前分配的 cidr 已经等于 maxCIDRs, 则直接无剩余 cidr 地址段错误.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>s</span><span class=p>.</span><span class=nx>allocatedCIDRs</span> <span class=o>==</span> <span class=nx>s</span><span class=p>.</span><span class=nx>maxCIDRs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>ErrCIDRRangeNoCIDRsRemaining</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>candidate</span> <span class=o>:=</span> <span class=nx>s</span><span class=p>.</span><span class=nx>nextCandidate</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>i</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 从上次的 candidate 开始循环遍历, 直到找到可用的 cidr.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>for</span> <span class=nx>i</span> <span class=p>=</span> <span class=mi>0</span><span class=p>;</span> <span class=nx>i</span> <span class=p>&lt;</span> <span class=nx>s</span><span class=p>.</span><span class=nx>maxCIDRs</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 如果当前位还未使用, 则使用该 candidate.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>if</span> <span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>.</span><span class=nf>Bit</span><span class=p>(</span><span class=nx>candidate</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>break</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 跟 maxCIDRs 取摸计算出 candidate
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>candidate</span> <span class=p>=</span> <span class=p>(</span><span class=nx>candidate</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>%</span> <span class=nx>s</span><span class=p>.</span><span class=nx>maxCIDRs</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 下次的 candidate 位置
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>s</span><span class=p>.</span><span class=nx>nextCandidate</span> <span class=p>=</span> <span class=p>(</span><span class=nx>candidate</span> <span class=o>+</span> <span class=mi>1</span><span class=p>)</span> <span class=o>%</span> <span class=nx>s</span><span class=p>.</span><span class=nx>maxCIDRs</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 配置 used bitmap 中 candidate 位置 bit 为 1
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>.</span><span class=nf>SetBit</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>,</span> <span class=nx>candidate</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 每次分配成功都会加一
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>s</span><span class=p>.</span><span class=nx>allocatedCIDRs</span><span class=o>++</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>s</span><span class=p>.</span><span class=nf>indexToCIDRBlock</span><span class=p>(</span><span class=nx>candidate</span><span class=p>),</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>indexToCIDRBlock</code> 方法可通过 index 位置进行位运算后获取 cidr 地址段.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>CidrSet</span><span class=p>)</span> <span class=nf>indexToCIDRBlock</span><span class=p>(</span><span class=nx>index</span> <span class=kt>int</span><span class=p>)</span> <span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>ip</span> <span class=p>[]</span><span class=kt>byte</span>
+</span></span><span class=line><span class=cl>	<span class=k>switch</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>s</span><span class=p>.</span><span class=nx>clusterCIDR</span><span class=p>.</span><span class=nx>IP</span><span class=p>.</span><span class=nf>To4</span><span class=p>()</span> <span class=o>!=</span> <span class=kc>nil</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>j</span> <span class=o>:=</span> <span class=nb>uint32</span><span class=p>(</span><span class=nx>index</span><span class=p>)</span> <span class=o>&lt;&lt;</span> <span class=nb>uint32</span><span class=p>(</span><span class=mi>32</span><span class=o>-</span><span class=nx>s</span><span class=p>.</span><span class=nx>nodeMaskSize</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=nx>ipInt</span> <span class=o>:=</span> <span class=p>(</span><span class=nx>binary</span><span class=p>.</span><span class=nx>BigEndian</span><span class=p>.</span><span class=nf>Uint32</span><span class=p>(</span><span class=nx>s</span><span class=p>.</span><span class=nx>clusterCIDR</span><span class=p>.</span><span class=nx>IP</span><span class=p>))</span> <span class=p>|</span> <span class=nx>j</span>
+</span></span><span class=line><span class=cl>			<span class=nx>ip</span> <span class=p>=</span> <span class=nb>make</span><span class=p>([]</span><span class=kt>byte</span><span class=p>,</span> <span class=nx>net</span><span class=p>.</span><span class=nx>IPv4len</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=nx>binary</span><span class=p>.</span><span class=nx>BigEndian</span><span class=p>.</span><span class=nf>PutUint32</span><span class=p>(</span><span class=nx>ip</span><span class=p>,</span> <span class=nx>ipInt</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>s</span><span class=p>.</span><span class=nx>clusterCIDR</span><span class=p>.</span><span class=nx>IP</span><span class=p>.</span><span class=nf>To16</span><span class=p>()</span> <span class=o>!=</span> <span class=kc>nil</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=o>...</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>IP</span><span class=p>:</span>   <span class=nx>ip</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>Mask</span><span class=p>:</span> <span class=nx>s</span><span class=p>.</span><span class=nx>nodeMask</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>通过单元测试分析下 <code>indexToCIDRBlock</code> 执行的过程. 比如 ipam 可分配的地址段为 <code>127.123.3.0/16</code>, 分给 node 的子网为 <code>24</code>, 那么可以分配的 cidr 地址范围是 <code>127.123.0.0 - 127.123.255.0</code>. 当 index 为 0 时, cidr 为 <code>127.123.0.0</code>, index 为 10 时, cidr 为 <code>127.123.10.0</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>TestIndexToCIDRBlock</span><span class=p>(</span><span class=nx>t</span> <span class=o>*</span><span class=nx>testing</span><span class=p>.</span><span class=nx>T</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>cases</span> <span class=o>:=</span> <span class=p>[]</span><span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>clusterCIDRStr</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>		<span class=nx>subnetMaskSize</span> <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>index</span>          <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>CIDRBlock</span>      <span class=kt>string</span>
+</span></span><span class=line><span class=cl>		<span class=nx>description</span>    <span class=kt>string</span>
+</span></span><span class=line><span class=cl>	<span class=p>}{</span>
+</span></span><span class=line><span class=cl>		<span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>clusterCIDRStr</span><span class=p>:</span> <span class=s>&#34;127.123.3.0/16&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>subnetMaskSize</span><span class=p>:</span> <span class=mi>24</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>index</span><span class=p>:</span>          <span class=mi>0</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>CIDRBlock</span><span class=p>:</span>      <span class=s>&#34;127.123.0.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>description</span><span class=p>:</span>    <span class=s>&#34;1st IP address indexed with IPv4&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=p>},</span>
+</span></span><span class=line><span class=cl>		<span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>clusterCIDRStr</span><span class=p>:</span> <span class=s>&#34;127.123.0.0/16&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>subnetMaskSize</span><span class=p>:</span> <span class=mi>24</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>index</span><span class=p>:</span>          <span class=mi>15</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>CIDRBlock</span><span class=p>:</span>      <span class=s>&#34;127.123.15.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>description</span><span class=p>:</span>    <span class=s>&#34;16th IP address indexed with IPv4&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=p>},</span>
+</span></span><span class=line><span class=cl>		<span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>clusterCIDRStr</span><span class=p>:</span> <span class=s>&#34;192.168.5.219/28&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>subnetMaskSize</span><span class=p>:</span> <span class=mi>32</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>index</span><span class=p>:</span>          <span class=mi>5</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>CIDRBlock</span><span class=p>:</span>      <span class=s>&#34;192.168.5.213/32&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>description</span><span class=p>:</span>    <span class=s>&#34;5th IP address indexed with IPv4&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=p>},</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>tc</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>cases</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>_</span><span class=p>,</span> <span class=nx>clusterCIDR</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>netutils</span><span class=p>.</span><span class=nf>ParseCIDRSloppy</span><span class=p>(</span><span class=nx>tc</span><span class=p>.</span><span class=nx>clusterCIDRStr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>a</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>NewCIDRSet</span><span class=p>(</span><span class=nx>clusterCIDR</span><span class=p>,</span> <span class=nx>tc</span><span class=p>.</span><span class=nx>subnetMaskSize</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>t</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error for %v &#34;</span><span class=p>,</span> <span class=nx>tc</span><span class=p>.</span><span class=nx>description</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=nx>cidr</span> <span class=o>:=</span> <span class=nx>a</span><span class=p>.</span><span class=nf>indexToCIDRBlock</span><span class=p>(</span><span class=nx>tc</span><span class=p>.</span><span class=nx>index</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>cidr</span><span class=p>.</span><span class=nf>String</span><span class=p>()</span> <span class=o>!=</span> <span class=nx>tc</span><span class=p>.</span><span class=nx>CIDRBlock</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>t</span><span class=p>.</span><span class=nf>Fatalf</span><span class=p>(</span><span class=s>&#34;error for %v index %d %s&#34;</span><span class=p>,</span> <span class=nx>tc</span><span class=p>.</span><span class=nx>description</span><span class=p>,</span> <span class=nx>tc</span><span class=p>.</span><span class=nx>index</span><span class=p>,</span> <span class=nx>cidr</span><span class=p>.</span><span class=nf>String</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#释放不用的-cidr-地址段><h4 id=释放不用的-cidr-地址段><span class=hanchor arialabel=Anchor># </span>释放不用的 cidr 地址段</h4></a><p><code>Release</code> 方法用做在地址分配器里释放对应的 cidr 地址段, 标记为空闲 ( 0 ).</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// Release releases the given CIDR range.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>CidrSet</span><span class=p>)</span> <span class=nf>Release</span><span class=p>(</span><span class=nx>cidr</span> <span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span><span class=p>)</span> <span class=kt>error</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 通过 cidr 获取 begin 和 end
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>begin</span><span class=p>,</span> <span class=nx>end</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>s</span><span class=p>.</span><span class=nf>getBeginningAndEndIndices</span><span class=p>(</span><span class=nx>cidr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>s</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>s</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 从 begin - end 进行遍历, 把对应的的位配置为空位, 0 为未使用.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=nx>begin</span><span class=p>;</span> <span class=nx>i</span> <span class=o>&lt;=</span> <span class=nx>end</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>.</span><span class=nf>Bit</span><span class=p>(</span><span class=nx>i</span><span class=p>)</span> <span class=o>!=</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>.</span><span class=nf>SetBit</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>,</span> <span class=nx>i</span><span class=p>,</span> <span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=nx>s</span><span class=p>.</span><span class=nx>allocatedCIDRs</span><span class=o>--</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>getBeginningAndEndIndices</code> 方法用来获取 cidr 在 used bitmap 中的索引偏移量. 函数实现原理还是颇为繁杂, 其内部有不少的位运算, 这里就分析地址的换算原理.</p><a href=#占位已被使用-cidr-地址段><h4 id=占位已被使用-cidr-地址段><span class=hanchor arialabel=Anchor># </span>占位已被使用 CIDR 地址段</h4></a><p><code>Occupy</code> 主要是在 ipam 里占位已经在 node 里配置过 cidr 的地址. 分配器在启动时会遍历集群中 node 对象列表, 把这些 node 的 cidr 都在 ipam 中占住, 避免被新的 node 分配占用.</p><p><code>Occupy</code> 方法跟 <code>Release</code> 相反, Release 是把指定的 cidr 给释放掉, 而 <code>Occupy</code> 是把指定的 cidr 给占位, 只是在 cidr 分配器里标记该 cidr 段已经被分配, 无需向 apiserver 请求更新.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>s</span> <span class=o>*</span><span class=nx>CidrSet</span><span class=p>)</span> <span class=nf>Occupy</span><span class=p>(</span><span class=nx>cidr</span> <span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span><span class=p>)</span> <span class=p>(</span><span class=nx>err</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 通过 cidr 获取 index 的 begin 和 end
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>begin</span><span class=p>,</span> <span class=nx>end</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>s</span><span class=p>.</span><span class=nf>getBeginningAndEndIndices</span><span class=p>(</span><span class=nx>cidr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>s</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>s</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=nx>i</span> <span class=o>:=</span> <span class=nx>begin</span><span class=p>;</span> <span class=nx>i</span> <span class=o>&lt;=</span> <span class=nx>end</span><span class=p>;</span> <span class=nx>i</span><span class=o>++</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>.</span><span class=nf>Bit</span><span class=p>(</span><span class=nx>i</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 设置该位 bit 为 1, 也就是已被使用.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>.</span><span class=nf>SetBit</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>s</span><span class=p>.</span><span class=nx>used</span><span class=p>,</span> <span class=nx>i</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=nx>s</span><span class=p>.</span><span class=nx>allocatedCIDRs</span><span class=o>++</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#总结><h2 id=总结><span class=hanchor arialabel=Anchor># </span>总结</h2></a><p>nodeIpamController 的原理就是这样的. 控制器启动时通过 <code>--cluster-cidr</code> 和 <code>--cidr-allocator-type</code> 生成 cidr 地址段生成器. 其内部启动 nodeInformer 监听 node 对象资源, 当触发 node 新增事件时, 为 node 申请分配 cidr 地址段, 然后向 apiserver 请求更新 node podcidrs 配置信息, 当触发删除事件时, 则释放这些 ip cidr 地址段.</p><p><img src=https://xiaorui-cc.oss-cn-hangzhou.aliyuncs.com/images/202301/202301191644957.png width=auto alt></p><p>pod 的 ip 地址是依赖 nodeipma 分配的, 而 service 的 clusetrIP 则是 kube apiserver 来实现的, 其 clusterIP 集群地址范围是由参数 <code>--service-cluster-ip-range</code> 控制的, 默认是 <code>10.0.0.0/24</code> 地址范围, 当然是不足够的了, 通常会把子网调整到 <code>16</code>. service 和 pod 的 cidr 范围尽量不要冲突, ipma controller 启动时会读取 <code>--service-cluster-ip-range</code> 参数作为 service 的 cidr 地址段, 然后在分配器调用 <code>Occupy</code> 占位 service 地址范围以规避分配冲突.</p><p>原文档链接：
+<a href=https://github.com/rfyiamcool/notes/blob/main/kubernetes_nodeipam_controller_code rel=noopener>notes/kubernetes_nodeipam_controller_code.md at main · rfyiamcool/notes (github.com)</a></p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
