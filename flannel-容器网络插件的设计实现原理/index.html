@@ -1,0 +1,1453 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="flannel 容器网络插件的设计实现原理  本文基于 flannel v0.21.0 版本源码分析.
+ CNI, 它的全称是 Container Network Interface, 即容器网络的 API 接口. 平时比较常用的 CNI 实现有 Flannel、Calico 等."><title>flannel 容器网络插件的设计实现原理</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.cbe93db93a7b18e6c6e4870cee51eac7.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.d529fb0b69f1dad5fc7337016397da9a.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><h1>flannel 容器网络插件的设计实现原理</h1><p class=meta>最近编辑于
+Nov 2, 2023</p><ul class=tags><li><a href=https://www.ryken.cloud/tags/flannel/>Flannel</a></li></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#flannel-main-启动入口>flannel main 启动入口</a></li><li><a href=#subnetmanager-原理>subnetManager 原理</a><ol><li><a href=#创建-subnetmanager-子网管理器>创建 subnetManager 子网管理器</a></li></ol></li><li><a href=#backend-manager-实现原理>backend manager 实现原理</a></li><li><a href=#vxlan-网络通信的实现原理>vxlan 网络通信的实现原理</a><ol><li><a href=#创建-vxlan-network-实例>创建 vxlan network 实例</a></li><li><a href=#vxlan-network-启动入口>vxlan network 启动入口</a></li><li><a href=#vxlan-的配置实现原理>vxlan 的配置实现原理</a></li></ol></li><li><a href=#host-gw-network-的实现原理>host-gw network 的实现原理</a><ol><li><a href=#host-gw-network-启动入口>host-gw network 启动入口</a></li><li><a href=#host-gw-配置路由表的原理>host-gw 配置路由表的原理</a></li><li><a href=#定时修复路由表>定时修复路由表</a></li><li><a href=#host-gw-适用于二层网络>host-gw 适用于二层网络</a></li></ol></li><li><a href=#总结>总结</a></li></ol></nav></details></aside><a href=#flannel-容器网络插件的设计实现原理><h1 id=flannel-容器网络插件的设计实现原理><span class=hanchor arialabel=Anchor># </span>flannel 容器网络插件的设计实现原理</h1></a><blockquote><p>本文基于 flannel <code>v0.21.0</code> 版本源码分析.</p></blockquote><p>CNI, 它的全称是 <code>Container Network Interface</code>, 即容器网络的 API 接口. 平时比较常用的 CNI 实现有 Flannel、Calico 等.</p><p>Flannel 支持 overlay/underlay 两种网络模式. 它使用 etcd 或者 kubernetes apiserver 存储整个集群的网络配置. 每个kubernetes 节点上会运行 flanneld 服务组件, 它从 etcd 或者 kubernetes api 中获取集群中各个 node 的网络地址 subset, 然后进行网络路由配置, 这样就可以实现跨主机的容器之间网络通信.</p><p>flannel 目前支持 udp, vxlan, host-gw 等 backend 实现.</p><ul><li><code>udp</code> 模式少有人用, 其实现原理是在用户态实现 udp 转发服务, 数据会在内核和用户态之间拷贝, 从而影响转发性能.</li><li><code>host-gw</code> (underlay 模式) 通过三层路由的方式实现通信, 不涉及vxlan 这类的封包解包, 所以也不需要 flannel.1 虚机网卡, 直接配置路由表的方式设置 pod 的下一跳, 达到实现跨主机的容器之间的通信的目的. flannel host-gw 方案无疑是性能最好的方案, 但需要 node 之间同在一个二层网络 (vlan) 里可达, 如果 node 之间不在同一个二层网络, 那么则需要使用 <code>calico</code> 这类路由网络方案.</li><li><code>vxlan</code> (overlay 模式) 是 Flannel 默认和推荐的模式, vxlan 网络虚拟化技术, 它使用一种隧道协议, 将二层以太网帧封装在四层 UDP 报文中, 通过三层网络传输组成一个虚拟大二层网络.</li></ul><p><code>host-gw</code> 的性能损失大约在 10% 左右，而 vxlan 这类网络方案性能损失在 20%~30% 左右.</p><p>本文主要介绍 vxlan 和 host-gw 的 backend 下的跨主机容器通信过程及原理.</p><p><strong>flannel 的设计实现基本流程</strong></p><p>下图 subnet manager 使用 k8s kube-apiserver, backend 选用 vxlan 网络.</p><p><img src=https://images.ryken.cloud/2023/11/202302041931615.png width=auto alt=image.png></p><p>下图 subnet manager 使用 k8s kube-apiserver, backend 选用 host-gw 网络.</p><p><img src=https://images.ryken.cloud/2023/11/202302051020026.png width=auto alt=image.png></p><a href=#flannel-main-启动入口><h2 id=flannel-main-启动入口><span class=hanchor arialabel=Anchor># </span>flannel main 启动入口</h2></a><p>分析下 main 的运行流程原理.</p><ol><li>实例化 subnet manager 管理对象, 当启用 <code>kube-subnet-mgr</code> 参数时, 使用 k8s apiserver 作为 subsetmgr, 其他情况使用 etcd 作为 subsetmgr.</li><li>根据 flannel backend 类型创建 backend 对象.</li><li>根据 backend 里配置创建获取 network 控制器对象.</li><li>启动 backend 的 network 控制器, 核心的处理逻辑都是各个 backend 的 network 里.</li><li>如果使用 systemd 管理进程, 则用 uds 跟 systemd 建连, 发送就绪消息.</li><li>等需要退出时, 向 apiserver 发送状态请求, 表明当前 flannel 在运行.</li><li>等待所有协程退出.</li></ol><p>这里涉及到了几个组件.</p><ul><li>subnet manager, 实现了ip的租期管理, 申请，续约, 监听事件变动都是在这里实现的.</li><li>backend manager, 用来构建不同容器通信的 backend 对象. 启动阶段 udp, vxlan, host-gw 的 backend 都注册在这里, 通过 <code>GetBackend</code> 获取对应类型的 backend 对象.</li><li>network, 在各个 backend 里都有实现 network 控制器组件, 该组件用来真正的去实施网络策略配置.</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>	<span class=nx>ctx</span><span class=p>,</span> <span class=nx>cancel</span> <span class=o>:=</span> <span class=nx>context</span><span class=p>.</span><span class=nf>WithCancel</span><span class=p>(</span><span class=nx>context</span><span class=p>.</span><span class=nf>Background</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 实例化 subnet manager, 当启用 kube-subnet-mgr 参数时, 使用 k8s apiserver 作为 subsetmgr, 其他情况使用 etcd 作为 subsetmgr.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>sm</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>newSubnetManager</span><span class=p>(</span><span class=nx>ctx</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>os</span><span class=p>.</span><span class=nf>Exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>log</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Created subnet manager: %s&#34;</span><span class=p>,</span> <span class=nx>sm</span><span class=p>.</span><span class=nf>Name</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>sigs</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=nx>os</span><span class=p>.</span><span class=nx>Signal</span><span class=p>,</span> <span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>signal</span><span class=p>.</span><span class=nf>Notify</span><span class=p>(</span><span class=nx>sigs</span><span class=p>,</span> <span class=nx>os</span><span class=p>.</span><span class=nx>Interrupt</span><span class=p>,</span> <span class=nx>syscall</span><span class=p>.</span><span class=nx>SIGTERM</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span> <span class=o>:=</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>{}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 监听 signal 信号, 收到后 cancel 退出.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nf>shutdownHandler</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>sigs</span><span class=p>,</span> <span class=nx>cancel</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>}()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 获取 flannel 配置.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>config</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>getConfig</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>sm</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>==</span> <span class=nx>errCanceled</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=nx>os</span><span class=p>.</span><span class=nf>Exit</span><span class=p>(</span><span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=o>...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 根据 flannel 类型创建 backend 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>bm</span> <span class=o>:=</span> <span class=nx>backend</span><span class=p>.</span><span class=nf>NewManager</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>sm</span><span class=p>,</span> <span class=nx>extIface</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>be</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>bm</span><span class=p>.</span><span class=nf>GetBackend</span><span class=p>(</span><span class=nx>config</span><span class=p>.</span><span class=nx>BackendType</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nf>cancel</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=nx>os</span><span class=p>.</span><span class=nf>Exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 根据配置在 backend 里创建获取 network 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>bn</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>be</span><span class=p>.</span><span class=nf>RegisterNetwork</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>wg</span><span class=p>,</span> <span class=nx>config</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nf>cancel</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=nx>os</span><span class=p>.</span><span class=nf>Exit</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 启动 backend 的 network.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>bn</span><span class=p>.</span><span class=nf>Run</span><span class=p>(</span><span class=nx>ctx</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>}()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果使用 systemd 管理进程, 则用 uds 跟 systemd 建连, 发送就绪消息.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=c1>// 跟 systemd-notify 二进制一样的效果.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>_</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>daemon</span><span class=p>.</span><span class=nf>SdNotify</span><span class=p>(</span><span class=kc>false</span><span class=p>,</span> <span class=s>&#34;READY=1&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Failed to notify systemd the message READY=1 %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 等需要退出时, 向 apiserver 发送状态请求, 表明当前 flannel 在运行. 
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>err</span> <span class=p>=</span> <span class=nx>sm</span><span class=p>.</span><span class=nf>CompleteLease</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>bn</span><span class=p>.</span><span class=nf>Lease</span><span class=p>(),</span> <span class=o>&amp;</span><span class=nx>wg</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;CompleteLease execute error err: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 等待所有协程退出.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=nx>os</span><span class=p>.</span><span class=nf>Exit</span><span class=p>(</span><span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#subnetmanager-原理><h2 id=subnetmanager-原理><span class=hanchor arialabel=Anchor># </span>subnetManager 原理</h2></a><p>在 flannel 内部实现了两种 subnetManager, 一种是 k8s kube-apiserver, 另一种是 etcd. 这里拿 kube-apiserver 举例, 两者实现上大同小异, 无大差异.</p><a href=#创建-subnetmanager-子网管理器><h3 id=创建-subnetmanager-子网管理器><span class=hanchor arialabel=Anchor># </span>创建 subnetManager 子网管理器</h3></a><p><code>newKubeSubnetManager</code> 会创建 node 资源的 informer 监听对象, 并注册 list/watch 过滤方法, 注册 eventHandler 事件回调方法.</p><p>代码位置: <code>pkg/subnet/kube/kube.go</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span><span class=lnt>92
+</span><span class=lnt>93
+</span><span class=lnt>94
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>newKubeSubnetManager</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>c</span> <span class=nx>clientset</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=nx>sc</span> <span class=o>*</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Config</span><span class=p>,</span> <span class=nx>nodeName</span><span class=p>,</span> <span class=nx>prefix</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>useMultiClusterCidr</span> <span class=kt>bool</span><span class=p>)</span> <span class=p>(</span><span class=o>*</span><span class=nx>kubeSubnetManager</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>ksm</span> <span class=nx>kubeSubnetManager</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 构建 annotations 里 key 的名字, 跟 prefix 前缀组合后格式为 `{prefix}/key`
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>annotations</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nf>newAnnotations</span><span class=p>(</span><span class=nx>prefix</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// ipv4 开关
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>enableIPv4</span> <span class=p>=</span> <span class=nx>sc</span><span class=p>.</span><span class=nx>EnableIPv4</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// ipv6 开关
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>enableIPv6</span> <span class=p>=</span> <span class=nx>sc</span><span class=p>.</span><span class=nx>EnableIPv6</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// kubeclient
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>client</span> <span class=p>=</span> <span class=nx>c</span>
+</span></span><span class=line><span class=cl>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>nodeName</span> <span class=p>=</span> <span class=nx>nodeName</span>
+</span></span><span class=line><span class=cl>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>subnetConf</span> <span class=p>=</span> <span class=nx>sc</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// events 用来实现事件通知, 事件由 informer 监听获取后推入的.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>events</span> <span class=p>=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>,</span> <span class=nx>scale</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果类型为 alloc, 则无需启动 node informer 监听.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>sc</span><span class=p>.</span><span class=nx>BackendType</span> <span class=o>==</span> <span class=s>&#34;alloc&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ksm</span><span class=p>.</span><span class=nx>disableNodeInformer</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=p>!</span><span class=nx>ksm</span><span class=p>.</span><span class=nx>disableNodeInformer</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>indexer</span><span class=p>,</span> <span class=nx>controller</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>NewIndexerInformer</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>			<span class=o>&amp;</span><span class=nx>cache</span><span class=p>.</span><span class=nx>ListWatch</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>ListFunc</span><span class=p>:</span> <span class=kd>func</span><span class=p>(</span><span class=nx>options</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>)</span> <span class=p>(</span><span class=nx>runtime</span><span class=p>.</span><span class=nx>Object</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 设定 list 过滤的条件
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>return</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>client</span><span class=p>.</span><span class=nf>CoreV1</span><span class=p>().</span><span class=nf>Nodes</span><span class=p>().</span><span class=nf>List</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>options</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>},</span>
+</span></span><span class=line><span class=cl>				<span class=nx>WatchFunc</span><span class=p>:</span> <span class=kd>func</span><span class=p>(</span><span class=nx>options</span> <span class=nx>metav1</span><span class=p>.</span><span class=nx>ListOptions</span><span class=p>)</span> <span class=p>(</span><span class=nx>watch</span><span class=p>.</span><span class=nx>Interface</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 设定 watch 过滤的条件
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>return</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>client</span><span class=p>.</span><span class=nf>CoreV1</span><span class=p>().</span><span class=nf>Nodes</span><span class=p>().</span><span class=nf>Watch</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>options</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=o>&amp;</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>{},</span> <span class=c1>// 监听 node 资源对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>resyncPeriod</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>cache</span><span class=p>.</span><span class=nx>ResourceEventHandlerFuncs</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>AddFunc</span><span class=p>:</span> <span class=kd>func</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 注册 add event 回调方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=nx>ksm</span><span class=p>.</span><span class=nf>handleAddLeaseEvent</span><span class=p>(</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>EventAdded</span><span class=p>,</span> <span class=nx>obj</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>},</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// 注册 event 回调方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=nx>UpdateFunc</span><span class=p>:</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>handleUpdateLeaseEvent</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>				<span class=nx>DeleteFunc</span><span class=p>:</span> <span class=kd>func</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 注册 delete event 回调方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=nx>_</span><span class=p>,</span> <span class=nx>isNode</span> <span class=o>:=</span> <span class=nx>obj</span><span class=p>.(</span><span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>					<span class=k>if</span> <span class=p>!</span><span class=nx>isNode</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=nx>deletedState</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>obj</span><span class=p>.(</span><span class=nx>cache</span><span class=p>.</span><span class=nx>DeletedFinalStateUnknown</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>						<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>							<span class=k>return</span>
+</span></span><span class=line><span class=cl>						<span class=p>}</span>
+</span></span><span class=line><span class=cl>						<span class=nx>node</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>deletedState</span><span class=p>.</span><span class=nx>Obj</span><span class=p>.(</span><span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>						<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>							<span class=k>return</span>
+</span></span><span class=line><span class=cl>						<span class=p>}</span>
+</span></span><span class=line><span class=cl>						<span class=nx>obj</span> <span class=p>=</span> <span class=nx>node</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>					<span class=nx>ksm</span><span class=p>.</span><span class=nf>handleAddLeaseEvent</span><span class=p>(</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>EventRemoved</span><span class=p>,</span> <span class=nx>obj</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// informer indexer 索引方法.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>cache</span><span class=p>.</span><span class=nx>Indexers</span><span class=p>{</span><span class=nx>cache</span><span class=p>.</span><span class=nx>NamespaceIndex</span><span class=p>:</span> <span class=nx>cache</span><span class=p>.</span><span class=nx>MetaNamespaceIndexFunc</span><span class=p>},</span>
+</span></span><span class=line><span class=cl>		<span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ksm</span><span class=p>.</span><span class=nx>nodeController</span> <span class=p>=</span> <span class=nx>controller</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ksm</span><span class=p>.</span><span class=nx>nodeStore</span> <span class=p>=</span> <span class=nx>listers</span><span class=p>.</span><span class=nf>NewNodeLister</span><span class=p>(</span><span class=nx>indexer</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果开启了多集群 cidr 支持, 则需要监听 k8s networkingv1alpha1.ClusterCIDR 资源.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>useMultiClusterCidr</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>_</span><span class=p>,</span> <span class=nx>clusterController</span> <span class=o>:=</span> <span class=nx>cache</span><span class=p>.</span><span class=nf>NewIndexerInformer</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>			<span class=o>&amp;</span><span class=nx>cache</span><span class=p>.</span><span class=nx>ListWatch</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=o>...</span>
+</span></span><span class=line><span class=cl>			<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=o>&amp;</span><span class=nx>networkingv1alpha1</span><span class=p>.</span><span class=nx>ClusterCIDR</span><span class=p>{},</span>
+</span></span><span class=line><span class=cl>			<span class=nx>resyncPeriod</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>			<span class=nx>cache</span><span class=p>.</span><span class=nx>ResourceEventHandlerFuncs</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>AddFunc</span><span class=p>:</span> <span class=kd>func</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 注册 add 事件方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=nx>ksm</span><span class=p>.</span><span class=nf>handleAddClusterCidr</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>},</span>
+</span></span><span class=line><span class=cl>				<span class=nx>DeleteFunc</span><span class=p>:</span> <span class=kd>func</span><span class=p>(</span><span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 注册 delete 事件方法
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=nx>ksm</span><span class=p>.</span><span class=nf>handleDeleteClusterCidr</span><span class=p>(</span><span class=nx>obj</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=p>},</span>
+</span></span><span class=line><span class=cl>			<span class=nx>cache</span><span class=p>.</span><span class=nx>Indexers</span><span class=p>{</span><span class=nx>cache</span><span class=p>.</span><span class=nx>NamespaceIndex</span><span class=p>:</span> <span class=nx>cache</span><span class=p>.</span><span class=nx>MetaNamespaceIndexFunc</span><span class=p>},</span>
+</span></span><span class=line><span class=cl>		<span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ksm</span><span class=p>.</span><span class=nx>clusterCIDRController</span> <span class=p>=</span> <span class=nx>clusterController</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>ksm</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>handleAddLeaseEvent</code> 是上面 informer 里 add/delete 的事件回调方法, 其逻辑根据 node 对象中的 spec.PodCIDR 和 annotations 一些字段来构建 lease 租约结构, 然后把 lease 写到管道里.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>ksm</span> <span class=o>*</span><span class=nx>kubeSubnetManager</span><span class=p>)</span> <span class=nf>handleAddLeaseEvent</span><span class=p>(</span><span class=nx>et</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>EventType</span><span class=p>,</span> <span class=nx>obj</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>n</span> <span class=o>:=</span> <span class=nx>obj</span><span class=p>.(</span><span class=o>*</span><span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果 node 注释集合里没有 &#39;kube-subnet-manager&#39; 字段, 或者不为 true, 则直接跳出.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>s</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>n</span><span class=p>.</span><span class=nx>Annotations</span><span class=p>[</span><span class=nx>ksm</span><span class=p>.</span><span class=nx>annotations</span><span class=p>.</span><span class=nx>SubnetKubeManaged</span><span class=p>];</span> <span class=p>!</span><span class=nx>ok</span> <span class=o>||</span> <span class=nx>s</span> <span class=o>!=</span> <span class=s>&#34;true&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 根据 node 对象中的 spec.PodCIDR 和 annotations 信息来构建 lease 租约结构.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>l</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>ksm</span><span class=p>.</span><span class=nf>nodeToLease</span><span class=p>(</span><span class=o>*</span><span class=nx>n</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 把解析到的 lease 租约结构写到 events 里做通知.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>ksm</span><span class=p>.</span><span class=nx>events</span> <span class=o>&lt;-</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>{</span><span class=nx>Type</span><span class=p>:</span> <span class=nx>et</span><span class=p>,</span> <span class=nx>Lease</span><span class=p>:</span> <span class=nx>l</span><span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>nodeToLease</code> 会根据 v1.Node 对象里的数据构建 subnet.Lease 数据结构. 其转换过程看下面代码中的注释.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>ksm</span> <span class=o>*</span><span class=nx>kubeSubnetManager</span><span class=p>)</span> <span class=nf>nodeToLease</span><span class=p>(</span><span class=nx>n</span> <span class=nx>v1</span><span class=p>.</span><span class=nx>Node</span><span class=p>)</span> <span class=p>(</span><span class=nx>l</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>Lease</span><span class=p>,</span> <span class=nx>err</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>enableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 从 node annotations 里获取 node 的 publicip
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>l</span><span class=p>.</span><span class=nx>Attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>ip</span><span class=p>.</span><span class=nf>ParseIP4</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>Annotations</span><span class=p>[</span><span class=nx>ksm</span><span class=p>.</span><span class=nx>annotations</span><span class=p>.</span><span class=nx>BackendPublicIP</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=nx>l</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 获取 node annotations 的 BackendData 字段数据
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>l</span><span class=p>.</span><span class=nx>Attrs</span><span class=p>.</span><span class=nx>BackendData</span> <span class=p>=</span> <span class=nx>json</span><span class=p>.</span><span class=nf>RawMessage</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>Annotations</span><span class=p>[</span><span class=nx>ksm</span><span class=p>.</span><span class=nx>annotations</span><span class=p>.</span><span class=nx>BackendData</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=kd>var</span> <span class=nx>cidr</span> <span class=o>*</span><span class=nx>net</span><span class=p>.</span><span class=nx>IPNet</span>
+</span></span><span class=line><span class=cl>		<span class=k>switch</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=nb>len</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 无效的 cidr
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>_</span><span class=p>,</span> <span class=nx>cidr</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>net</span><span class=p>.</span><span class=nf>ParseCIDR</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDR</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>return</span> <span class=nx>l</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=nb>len</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span><span class=p>)</span> <span class=p>&lt;</span> <span class=mi>3</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 如果 podCIDRS 小于 3 个, 循环遍历出一个 cidr 为 ipv4的.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>podCidr</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>n</span><span class=p>.</span><span class=nx>Spec</span><span class=p>.</span><span class=nx>PodCIDRs</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>_</span><span class=p>,</span> <span class=nx>parseCidr</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>net</span><span class=p>.</span><span class=nf>ParseCIDR</span><span class=p>(</span><span class=nx>podCidr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=k>return</span> <span class=nx>l</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>parseCidr</span><span class=p>.</span><span class=nx>IP</span><span class=p>)</span> <span class=o>==</span> <span class=nx>net</span><span class=p>.</span><span class=nx>IPv4len</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=nx>cidr</span> <span class=p>=</span> <span class=nx>parseCidr</span>
+</span></span><span class=line><span class=cl>					<span class=k>break</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=nx>l</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;node %q pod cidrs should be IPv4/IPv6 only or dualstack&#34;</span><span class=p>,</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>nodeName</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 把 cidr 转成 IP4Net 格式, 记录 ip 和 size
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>l</span><span class=p>.</span><span class=nx>Subnet</span> <span class=p>=</span> <span class=nx>ip</span><span class=p>.</span><span class=nf>FromIPNet</span><span class=p>(</span><span class=nx>cidr</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 当前 subnet 为 ipv4
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>l</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>=</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>enableIPv4</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>ksm</span><span class=p>.</span><span class=nx>enableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// ipv6 跟 ipv4 差不多.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=nx>l</span><span class=p>.</span><span class=nx>Attrs</span><span class=p>.</span><span class=nx>BackendType</span> <span class=p>=</span> <span class=nx>n</span><span class=p>.</span><span class=nx>Annotations</span><span class=p>[</span><span class=nx>ksm</span><span class=p>.</span><span class=nx>annotations</span><span class=p>.</span><span class=nx>BackendType</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>l</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>WatchLeases</code> 用来监听 ksm.events 管道, 当有数据时返回给调用方.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>ksm</span> <span class=o>*</span><span class=nx>kubeSubnetManager</span><span class=p>)</span> <span class=nf>WatchLeases</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>cursor</span> <span class=kd>interface</span><span class=p>{})</span> <span class=p>(</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>LeaseWatchResult</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>event</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>ksm</span><span class=p>.</span><span class=nx>events</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>LeaseWatchResult</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>Events</span><span class=p>:</span> <span class=p>[]</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>{</span><span class=nx>event</span><span class=p>},</span>
+</span></span><span class=line><span class=cl>		<span class=p>},</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ctx</span><span class=p>.</span><span class=nf>Done</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>LeaseWatchResult</span><span class=p>{},</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Canceled</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#backend-manager-实现原理><h2 id=backend-manager-实现原理><span class=hanchor arialabel=Anchor># </span>backend manager 实现原理</h2></a><p><img src=https://images.ryken.cloud/2023/11/202302042054717.png width=auto alt=image.png></p><p><code>BackendManager</code> 根据 backendType 获取注册表里的工厂方法, 然后创建对应的 backend 实例对象. flannel 在启动阶段, 各个 backend 会注册工厂方法到 backendManager 里.</p><p>源码位置: <code>pkg/backend/manager.go</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>var</span> <span class=nx>constructors</span> <span class=p>=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>BackendCtor</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>type</span> <span class=nx>manager</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>ctx</span>      <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span>
+</span></span><span class=line><span class=cl>	<span class=nx>sm</span>       <span class=nx>subnet</span><span class=p>.</span><span class=nx>Manager</span>
+</span></span><span class=line><span class=cl>	<span class=nx>mux</span>      <span class=nx>sync</span><span class=p>.</span><span class=nx>Mutex</span>
+</span></span><span class=line><span class=cl>	<span class=nx>active</span>   <span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>Backend</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span>       <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>NewManager</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>sm</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>Manager</span><span class=p>,</span> <span class=nx>extIface</span> <span class=o>*</span><span class=nx>ExternalInterface</span><span class=p>)</span> <span class=nx>Manager</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>manager</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>ctx</span><span class=p>:</span>      <span class=nx>ctx</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>sm</span><span class=p>:</span>       <span class=nx>sm</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>extIface</span><span class=p>:</span> <span class=nx>extIface</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>		<span class=nx>active</span><span class=p>:</span>   <span class=nb>make</span><span class=p>(</span><span class=kd>map</span><span class=p>[</span><span class=kt>string</span><span class=p>]</span><span class=nx>Backend</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>bm</span> <span class=o>*</span><span class=nx>manager</span><span class=p>)</span> <span class=nf>GetBackend</span><span class=p>(</span><span class=nx>backendType</span> <span class=kt>string</span><span class=p>)</span> <span class=p>(</span><span class=nx>Backend</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>bm</span><span class=p>.</span><span class=nx>mux</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>bm</span><span class=p>.</span><span class=nx>mux</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>betype</span> <span class=o>:=</span> <span class=nx>strings</span><span class=p>.</span><span class=nf>ToLower</span><span class=p>(</span><span class=nx>backendType</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果已存在, 则直接返回.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nx>be</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>bm</span><span class=p>.</span><span class=nx>active</span><span class=p>[</span><span class=nx>betype</span><span class=p>];</span> <span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=nx>be</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 在 constructors 里获取传入类型的 backend 工厂方法.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>befunc</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=nx>constructors</span><span class=p>[</span><span class=nx>betype</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;unknown backend type: %v&#34;</span><span class=p>,</span> <span class=nx>betype</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 创建 backend 对应.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>be</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>befunc</span><span class=p>(</span><span class=nx>bm</span><span class=p>.</span><span class=nx>sm</span><span class=p>,</span> <span class=nx>bm</span><span class=p>.</span><span class=nx>extIface</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 注册到活动 backend 字典里.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>bm</span><span class=p>.</span><span class=nx>active</span><span class=p>[</span><span class=nx>betype</span><span class=p>]</span> <span class=p>=</span> <span class=nx>be</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>bm</span><span class=p>.</span><span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=o>&lt;-</span><span class=nx>bm</span><span class=p>.</span><span class=nx>ctx</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 退出时需要删除
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>bm</span><span class=p>.</span><span class=nx>mux</span><span class=p>.</span><span class=nf>Lock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=nb>delete</span><span class=p>(</span><span class=nx>bm</span><span class=p>.</span><span class=nx>active</span><span class=p>,</span> <span class=nx>betype</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>bm</span><span class=p>.</span><span class=nx>mux</span><span class=p>.</span><span class=nf>Unlock</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=nx>bm</span><span class=p>.</span><span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>}()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=nx>be</span><span class=p>,</span> <span class=kc>nil</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>Register</span><span class=p>(</span><span class=nx>name</span> <span class=kt>string</span><span class=p>,</span> <span class=nx>ctor</span> <span class=nx>BackendCtor</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 注册 backend
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>constructors</span><span class=p>[</span><span class=nx>name</span><span class=p>]</span> <span class=p>=</span> <span class=nx>ctor</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>看下 vxlan 和 host-gw 是如何注册进来的.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=c1>// 源码位置: pkg/backend/vxlan/vxlan.go
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nf>init</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>backend</span><span class=p>.</span><span class=nf>Register</span><span class=p>(</span><span class=s>&#34;vxlan&#34;</span><span class=p>,</span> <span class=nx>New</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// 源码位置: pkg/backend/hostgw/hostgw.go
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=nf>init</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>backend</span><span class=p>.</span><span class=nf>Register</span><span class=p>(</span><span class=s>&#34;host-gw&#34;</span><span class=p>,</span> <span class=nx>New</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#vxlan-网络通信的实现原理><h2 id=vxlan-网络通信的实现原理><span class=hanchor arialabel=Anchor># </span>vxlan 网络通信的实现原理</h2></a><p>下图为 vxlan 跨主机的网络通信架构.</p><p><img src=https://images.ryken.cloud/2023/11/202302042019492.png width=auto alt=image.png></p><p>下图为 vxlan network 的实现原理.</p><p><img src=https://images.ryken.cloud/2023/11/202302042036994.png width=auto alt=image.png></p><p>vxlan 的 network 会从 kubeSubnetManager informer 中获取全量及增量的 node 事件. 然后从调用 <code>handleSubnetEvents</code> 方法对 vxlan 进行处理, 主要对 ARP / FDB / Route 进行配置.</p><p>源码位置: <code>pkg/backend/vxlan/vxlan_network.go</code></p><a href=#创建-vxlan-network-实例><h3 id=创建-vxlan-network-实例><span class=hanchor arialabel=Anchor># </span>创建 vxlan network 实例</h3></a><p>flannel 中每个 backend 对象都需要实现 <code>RegisterNetwork</code> 方法. 这里举例 <code>vxlan</code> 类型的 backend.</p><p><code>RegisterNetwork</code> 其内部流程如下.</p><ol><li>创建 vxlan 设备, 其内部为幂等的, 其内部过程会解决冲突问题.</li><li>调用 subnet manager 的 AcquireLease 接口完成 lease 地址配置租约的申请.</li><li>为 flannel device 设备添加 ip 地址, 子网为 32. 通常地址该 cidr 的网络地址.</li><li>创建 network, 内部会监听集群变化, 按照变化事件做出增删改 vxlan 操作.</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>be</span> <span class=o>*</span><span class=nx>VXLANBackend</span><span class=p>)</span> <span class=nf>RegisterNetwork</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>,</span> <span class=nx>wg</span> <span class=o>*</span><span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>,</span> <span class=nx>config</span> <span class=o>*</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Config</span><span class=p>)</span> <span class=p>(</span><span class=nx>backend</span><span class=p>.</span><span class=nx>Network</span><span class=p>,</span> <span class=kt>error</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>cfg</span> <span class=o>:=</span> <span class=kd>struct</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>VNI</span>           <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>Port</span>          <span class=kt>int</span>
+</span></span><span class=line><span class=cl>		<span class=nx>GBP</span>           <span class=kt>bool</span>
+</span></span><span class=line><span class=cl>		<span class=nx>Learning</span>      <span class=kt>bool</span>
+</span></span><span class=line><span class=cl>		<span class=nx>DirectRouting</span> <span class=kt>bool</span>
+</span></span><span class=line><span class=cl>	<span class=p>}{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>VNI</span><span class=p>:</span> <span class=nx>defaultVNI</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// backend 为空必然是异常的.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>config</span><span class=p>.</span><span class=nx>Backend</span><span class=p>)</span> <span class=p>&gt;</span> <span class=mi>0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>json</span><span class=p>.</span><span class=nf>Unmarshal</span><span class=p>(</span><span class=nx>config</span><span class=p>.</span><span class=nx>Backend</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>cfg</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;error decoding VXLAN backend config: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>dev</span><span class=p>,</span> <span class=nx>v6Dev</span> <span class=o>*</span><span class=nx>vxlanDevice</span>
+</span></span><span class=line><span class=cl>	<span class=kd>var</span> <span class=nx>err</span> <span class=kt>error</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>config</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>devAttrs</span> <span class=o>:=</span> <span class=nx>vxlanDeviceAttrs</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 创建 vxlan 设备, 其内部为幂等的, 其内部过程会解决冲突问题.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>dev</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nf>newVXLANDevice</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>devAttrs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=nx>dev</span><span class=p>.</span><span class=nx>directRouting</span> <span class=p>=</span> <span class=nx>cfg</span><span class=p>.</span><span class=nx>DirectRouting</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>config</span><span class=p>.</span><span class=nx>EnableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 构建 subnetAttrs 对象, 后用来申请租约.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>subnetAttrs</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nf>newSubnetAttrs</span><span class=p>(</span><span class=nx>be</span><span class=p>.</span><span class=nx>extIface</span><span class=p>.</span><span class=nx>ExtAddr</span><span class=p>,</span> <span class=nx>be</span><span class=p>.</span><span class=nx>extIface</span><span class=p>.</span><span class=nx>ExtV6Addr</span><span class=p>,</span> <span class=nb>uint16</span><span class=p>(</span><span class=nx>cfg</span><span class=p>.</span><span class=nx>VNI</span><span class=p>),</span> <span class=nx>dev</span><span class=p>,</span> <span class=nx>v6Dev</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 调用 subnet manager 的 AcquireLease 接口完成 lease 地址配置租约的申请.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>lease</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>be</span><span class=p>.</span><span class=nx>subnetMgr</span><span class=p>.</span><span class=nf>AcquireLease</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>subnetAttrs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>switch</span> <span class=nx>err</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=kc>nil</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>	<span class=k>case</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Canceled</span><span class=p>,</span> <span class=nx>context</span><span class=p>.</span><span class=nx>DeadlineExceeded</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 超时或关闭
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>	<span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to acquire lease: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>config</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 获取 flannel 地址信息.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>net</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>config</span><span class=p>.</span><span class=nf>GetFlannelNetwork</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>err</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 为 flannel device 设备添加 ip 地址, 子网为 32. 通常地址该 cidr 的网络地址.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>dev</span><span class=p>.</span><span class=nf>Configure</span><span class=p>(</span><span class=nx>ip</span><span class=p>.</span><span class=nx>IP4Net</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>.</span><span class=nx>IP</span><span class=p>,</span> <span class=nx>PrefixLen</span><span class=p>:</span> <span class=mi>32</span><span class=p>},</span> <span class=nx>net</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span> <span class=kc>nil</span><span class=p>,</span> <span class=nx>fmt</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to configure interface %s: %w&#34;</span><span class=p>,</span> <span class=nx>dev</span><span class=p>.</span><span class=nx>link</span><span class=p>.</span><span class=nf>Attrs</span><span class=p>().</span><span class=nx>Name</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>config</span><span class=p>.</span><span class=nx>EnableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 这个重要. 创建 vxlan network, 内部会监听集群变化, 按照变化事件做出增删改 vxlan 操作.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>return</span> <span class=nf>newNetwork</span><span class=p>(</span><span class=nx>be</span><span class=p>.</span><span class=nx>subnetMgr</span><span class=p>,</span> <span class=nx>be</span><span class=p>.</span><span class=nx>extIface</span><span class=p>,</span> <span class=nx>dev</span><span class=p>,</span> <span class=nx>v6Dev</span><span class=p>,</span> <span class=nx>ip</span><span class=p>.</span><span class=nx>IP4Net</span><span class=p>{},</span> <span class=nx>lease</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#vxlan-network-启动入口><h3 id=vxlan-network-启动入口><span class=hanchor arialabel=Anchor># </span>vxlan network 启动入口</h3></a><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>nw</span> <span class=o>*</span><span class=nx>network</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span> <span class=o>:=</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>events</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=p>[]</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 从 kube subnet 组件里监听集群内所有 node 的网络变化.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=c1>// 收到变更事件后, 传入 evnets 管道中.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>subnet</span><span class=p>.</span><span class=nf>WatchLeases</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>subnetMgr</span><span class=p>,</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>SubnetLease</span><span class=p>,</span> <span class=nx>events</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>}()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 获取来自 informer node 资源变化.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>evtBatch</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>events</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 进行 vxlan 网络配置. 主要为添加 arp, fdb, route 等过程.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>nw</span><span class=p>.</span><span class=nf>handleSubnetEvents</span><span class=p>(</span><span class=nx>evtBatch</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#vxlan-的配置实现原理><h3 id=vxlan-的配置实现原理><span class=hanchor arialabel=Anchor># </span>vxlan 的配置实现原理</h3></a><p><code>handleSubnetEvents</code> 为配置 vlan 虚拟网络的核心方法, 实现原理是根据传入的事件和配置来添加或删除 vxlan 的 arp, fdb, route 配置.</p><p>其详细实现过程看下面代码中注释.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>nw</span> <span class=o>*</span><span class=nx>network</span><span class=p>)</span> <span class=nf>handleSubnetEvents</span><span class=p>(</span><span class=nx>batch</span> <span class=p>[]</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>event</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>batch</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>sn</span> <span class=o>:=</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Subnet</span>
+</span></span><span class=line><span class=cl>		<span class=nx>v6Sn</span> <span class=o>:=</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>IPv6Subnet</span>
+</span></span><span class=line><span class=cl>		<span class=nx>attrs</span> <span class=o>:=</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Attrs</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 只处理 vxlan 类型, 其他类型直接跳过.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>if</span> <span class=nx>attrs</span><span class=p>.</span><span class=nx>BackendType</span> <span class=o>!=</span> <span class=s>&#34;vxlan&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>continue</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=kd>var</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>			<span class=nx>vxlanAttrs</span><span class=p>,</span> <span class=nx>v6VxlanAttrs</span>           <span class=nx>vxlanLeaseAttrs</span>
+</span></span><span class=line><span class=cl>			<span class=nx>directRoutingOK</span><span class=p>,</span> <span class=nx>v6DirectRoutingOK</span> <span class=kt>bool</span>
+</span></span><span class=line><span class=cl>			<span class=nx>directRoute</span><span class=p>,</span> <span class=nx>v6DirectRoute</span>         <span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span>
+</span></span><span class=line><span class=cl>			<span class=nx>vxlanRoute</span><span class=p>,</span> <span class=nx>v6VxlanRoute</span>           <span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span>
+</span></span><span class=line><span class=cl>		<span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=o>&amp;&amp;</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 获取属性信息
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>json</span><span class=p>.</span><span class=nf>Unmarshal</span><span class=p>(</span><span class=nx>attrs</span><span class=p>.</span><span class=nx>BackendData</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>vxlanAttrs</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>continue</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=c1>// 构建 vxlan 路由
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>vxlanRoute</span> <span class=p>=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>LinkIndex</span><span class=p>:</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nx>link</span><span class=p>.</span><span class=nf>Attrs</span><span class=p>().</span><span class=nx>Index</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>				<span class=nx>Scope</span><span class=p>:</span>     <span class=nx>netlink</span><span class=p>.</span><span class=nx>SCOPE_UNIVERSE</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>				<span class=nx>Dst</span><span class=p>:</span>       <span class=nx>sn</span><span class=p>.</span><span class=nf>ToIPNet</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>				<span class=nx>Gw</span><span class=p>:</span>        <span class=nx>sn</span><span class=p>.</span><span class=nx>IP</span><span class=p>.</span><span class=nf>ToIP</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=nx>vxlanRoute</span><span class=p>.</span><span class=nf>SetFlag</span><span class=p>(</span><span class=nx>syscall</span><span class=p>.</span><span class=nx>RTNH_F_ONLINK</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=c1>// 创建直接路由
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>directRoute</span> <span class=p>=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>Dst</span><span class=p>:</span> <span class=nx>sn</span><span class=p>.</span><span class=nf>ToIPNet</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>				<span class=nx>Gw</span><span class=p>:</span>  <span class=nx>attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>.</span><span class=nf>ToIP</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nx>directRouting</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nx>dr</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>ip</span><span class=p>.</span><span class=nf>DirectRouting</span><span class=p>(</span><span class=nx>attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>.</span><span class=nf>ToIP</span><span class=p>());</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=nx>log</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=nx>directRoutingOK</span> <span class=p>=</span> <span class=nx>dr</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>		<span class=k>switch</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Type</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=c1>// 当事件类型为 add 时, 进行配置该子网路由.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>case</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>EventAdded</span><span class=p>:</span> 
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nx>directRoutingOK</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteReplace</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>directRoute</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=k>continue</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 添加 arp 配置
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>AddARP</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>sn</span><span class=p>.</span><span class=nx>IP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=k>continue</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>					<span class=c1>// 添加 fdb 配置
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>AddFDB</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=c1>// 如果发生异常则回滚删掉 arp.
+</span></span></span><span class=line><span class=cl><span class=c1></span>						<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>DelARP</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>.</span><span class=nx>IP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>						<span class=k>continue</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>					<span class=c1>// 添加和更新 vxlan route 路由配置.
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteReplace</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>vxlanRoute</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=c1>// 如果发生失败, 则尝试回收 arp 配置.
+</span></span></span><span class=line><span class=cl><span class=c1></span>						<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>DelARP</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>.</span><span class=nx>IP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>						<span class=c1>// 如果发生失败, 则尝试回收 fdb 配置.
+</span></span></span><span class=line><span class=cl><span class=c1></span>						<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>DelFDB</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>						<span class=k>continue</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>EventRemoved</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nx>directRoutingOK</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 直接路由模式, 只需要删除路由，无需删除 arp 和 fdb.
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteDel</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>directRoute</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 先删除 arp 配置
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>DelARP</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>sn</span><span class=p>.</span><span class=nx>IP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=nx>log</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=s>&#34;DelARP failed: &#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>					<span class=c1>// 再删除 fdb 配置
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>nw</span><span class=p>.</span><span class=nx>dev</span><span class=p>.</span><span class=nf>DelFDB</span><span class=p>(</span><span class=nx>neighbor</span><span class=p>{</span><span class=nx>IP</span><span class=p>:</span> <span class=nx>attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>,</span> <span class=nx>MAC</span><span class=p>:</span> <span class=nx>net</span><span class=p>.</span><span class=nf>HardwareAddr</span><span class=p>(</span><span class=nx>vxlanAttrs</span><span class=p>.</span><span class=nx>VtepMAC</span><span class=p>)});</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=nx>log</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=s>&#34;DelFDB failed: &#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>					<span class=c1>// 删除 vxlan 路由信息.
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteDel</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>vxlanRoute</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>						<span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;failed to delete vxlanRoute (%s -&gt; %s): %v&#34;</span><span class=p>,</span> <span class=nx>vxlanRoute</span><span class=p>.</span><span class=nx>Dst</span><span class=p>,</span> <span class=nx>vxlanRoute</span><span class=p>.</span><span class=nx>Gw</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>					<span class=p>}</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 非法事件, 当前的代码不会跳到这里.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>log</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=s>&#34;internal error: unknown event type: &#34;</span><span class=p>,</span> <span class=nb>int</span><span class=p>(</span><span class=nx>event</span><span class=p>.</span><span class=nx>Type</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#host-gw-network-的实现原理><h2 id=host-gw-network-的实现原理><span class=hanchor arialabel=Anchor># </span>host-gw network 的实现原理</h2></a><p>下图为 host-gw 跨主机的网络通信原理.</p><p><img src=https://images.ryken.cloud/2023/11/202302050019035.png width=auto alt=image.png></p><p>在 flannel host-gw 网络模式下, 不涉及 VXLAN 的封包解包, 不需要经过 flannel.1 虚机网卡. flanneld 负责为各节点设置路由, 将对应节点 Pod 子网的下一跳地址指向对应的节点的IP.</p><p>源码位置: <code>pkg/backend/route_network.go</code></p><a href=#host-gw-network-启动入口><h3 id=host-gw-network-启动入口><span class=hanchor arialabel=Anchor># </span>host-gw network 启动入口</h3></a><p><code>Run()</code> 方法会获取和监听 leases 对象, 并调用 <code>handleSubnetEvents</code> 来处理 host-gw 路由配置.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>n</span> <span class=o>*</span><span class=nx>RouteNetwork</span><span class=p>)</span> <span class=nf>Run</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span> <span class=o>:=</span> <span class=nx>sync</span><span class=p>.</span><span class=nx>WaitGroup</span><span class=p>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>evts</span> <span class=o>:=</span> <span class=nb>make</span><span class=p>(</span><span class=kd>chan</span> <span class=p>[]</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 从 etcd 或者 k8s apiserver 监听 node lease.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>subnet</span><span class=p>.</span><span class=nf>WatchLeases</span><span class=p>(</span><span class=nx>ctx</span><span class=p>,</span> <span class=nx>n</span><span class=p>.</span><span class=nx>SM</span><span class=p>,</span> <span class=nx>n</span><span class=p>.</span><span class=nx>SubnetLease</span><span class=p>,</span> <span class=nx>evts</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>}()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=nx>n</span><span class=p>.</span><span class=nx>routes</span> <span class=p>=</span> <span class=nb>make</span><span class=p>([]</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>10</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=nx>wg</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>go</span> <span class=kd>func</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 定时检查注册的路由跟实际 node 路由配置是否有缺失, 不存在时需要添加.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>n</span><span class=p>.</span><span class=nf>routeCheck</span><span class=p>(</span><span class=nx>ctx</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=nx>wg</span><span class=p>.</span><span class=nf>Done</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=p>}()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>defer</span> <span class=nx>wg</span><span class=p>.</span><span class=nf>Wait</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>evtBatch</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>evts</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 根据 event 处理路由表
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>n</span><span class=p>.</span><span class=nf>handleSubnetEvents</span><span class=p>(</span><span class=nx>evtBatch</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#host-gw-配置路由表的原理><h3 id=host-gw-配置路由表的原理><span class=hanchor arialabel=Anchor># </span>host-gw 配置路由表的原理</h3></a><p><img src=https://images.ryken.cloud/2023/11/202302051013266.png width=auto alt=image.png></p><p><code>handleSubnetEvents</code> 用来根据 event type 来增减路由表, 其内部使用 <code>netlink</code> 的 <code>RouteAdd</code> 来添加路由条目, 调动 <code>RouteDel</code> 来清理路由.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>n</span> <span class=o>*</span><span class=nx>RouteNetwork</span><span class=p>)</span> <span class=nf>handleSubnetEvents</span><span class=p>(</span><span class=nx>batch</span> <span class=p>[]</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Event</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>evt</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>batch</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>switch</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Type</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>EventAdded</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 当收到添加事件时, 在路由表里增加相关路由条目.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>log</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Subnet added: %v via %v&#34;</span><span class=p>,</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>,</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>				<span class=c1>// 根据 lease 来构建 route 对象
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=nx>route</span> <span class=o>:=</span> <span class=nx>n</span><span class=p>.</span><span class=nf>GetRoute</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>				<span class=c1>// 添加路由表
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=nf>routeAdd</span><span class=p>(</span><span class=nx>route</span><span class=p>,</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>FAMILY_V4</span><span class=p>,</span> <span class=nx>n</span><span class=p>.</span><span class=nx>addToRouteList</span><span class=p>,</span> <span class=nx>n</span><span class=p>.</span><span class=nx>removeFromV4RouteList</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// ipv6 暂时忽略
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=nx>subnet</span><span class=p>.</span><span class=nx>EventRemoved</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 当收到删除事件时, 进行相关路由条目删除.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=c1>// ...
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=nx>log</span><span class=p>.</span><span class=nf>Info</span><span class=p>(</span><span class=s>&#34;Subnet removed: &#34;</span><span class=p>,</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>				<span class=c1>// 根据 lease 构建 route 对象.
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=nx>route</span> <span class=o>:=</span> <span class=nx>n</span><span class=p>.</span><span class=nf>GetRoute</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// 在 route list 里剔除》
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=nx>n</span><span class=p>.</span><span class=nf>removeFromV4RouteList</span><span class=p>(</span><span class=o>*</span><span class=nx>route</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>				<span class=c1>// 删除该路由.
+</span></span></span><span class=line><span class=cl><span class=c1></span>				<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteDel</span><span class=p>(</span><span class=nx>route</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Error deleting route to %v: %v&#34;</span><span class=p>,</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=k>if</span> <span class=nx>evt</span><span class=p>.</span><span class=nx>Lease</span><span class=p>.</span><span class=nx>EnableIPv6</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=c1>// ipv6 暂时忽略
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>		<span class=k>default</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>			<span class=nx>log</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=s>&#34;Internal error: unknown event type: &#34;</span><span class=p>,</span> <span class=nb>int</span><span class=p>(</span><span class=nx>evt</span><span class=p>.</span><span class=nx>Type</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>GetRoute</code> 方法是在 <code>RegisterNetwork</code> 时赋值的匿名方法, 其内部会把传入的 lease 结构转换为 netlink.Route 路由结构. route 的 dst 字段为 subnet 地址段, gw 是路由的下一条地址, 这里其实就是该 subset 对应的 node 的地址.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=nx>n</span><span class=p>.</span><span class=nx>GetRoute</span> <span class=p>=</span> <span class=kd>func</span><span class=p>(</span><span class=nx>lease</span> <span class=o>*</span><span class=nx>subnet</span><span class=p>.</span><span class=nx>Lease</span><span class=p>)</span> <span class=o>*</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>return</span> <span class=o>&amp;</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>Dst</span><span class=p>:</span>       <span class=nx>lease</span><span class=p>.</span><span class=nx>Subnet</span><span class=p>.</span><span class=nf>ToIPNet</span><span class=p>(),</span>       <span class=c1>// 目标地址
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>Gw</span><span class=p>:</span>        <span class=nx>lease</span><span class=p>.</span><span class=nx>Attrs</span><span class=p>.</span><span class=nx>PublicIP</span><span class=p>.</span><span class=nf>ToIP</span><span class=p>(),</span>  <span class=c1>// 路由下一条地址
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=nx>LinkIndex</span><span class=p>:</span> <span class=nx>n</span><span class=p>.</span><span class=nx>LinkIndex</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>routeAdd</code> 用来添加路由条目, 如果该路由条目存在时, 需要先剔除再添加.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>func</span> <span class=nf>routeAdd</span><span class=p>(</span><span class=nx>route</span> <span class=o>*</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>,</span> <span class=nx>ipFamily</span> <span class=kt>int</span><span class=p>,</span> <span class=nx>addToRouteList</span><span class=p>,</span> <span class=nx>removeFromRouteList</span> <span class=kd>func</span><span class=p>(</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>))</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nf>addToRouteList</span><span class=p>(</span><span class=o>*</span><span class=nx>route</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 先检查是否存在.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>routeList</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteListFiltered</span><span class=p>(</span><span class=nx>ipFamily</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>{</span><span class=nx>Dst</span><span class=p>:</span> <span class=nx>route</span><span class=p>.</span><span class=nx>Dst</span><span class=p>},</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>RT_FILTER_DST</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Warningf</span><span class=p>(</span><span class=s>&#34;Unable to list routes: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 如果存在且配置不一致时, 需要先删除路由条目.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>routeList</span><span class=p>)</span> <span class=p>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=p>!</span><span class=nf>routeEqual</span><span class=p>(</span><span class=nx>routeList</span><span class=p>[</span><span class=mi>0</span><span class=p>],</span> <span class=o>*</span><span class=nx>route</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteDel</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>routeList</span><span class=p>[</span><span class=mi>0</span><span class=p>]);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=nf>removeFromRouteList</span><span class=p>(</span><span class=nx>routeList</span><span class=p>[</span><span class=mi>0</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 再次获取跟传入的目标 dst 一致的路由列表.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>routeList</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteListFiltered</span><span class=p>(</span><span class=nx>ipFamily</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>{</span><span class=nx>Dst</span><span class=p>:</span> <span class=nx>route</span><span class=p>.</span><span class=nx>Dst</span><span class=p>},</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>RT_FILTER_DST</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Warningf</span><span class=p>(</span><span class=s>&#34;Unable to list routes: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 有路由表, 而且配置一致, 则忽略, 否则进行添加路由表.
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=nx>routeList</span><span class=p>)</span> <span class=p>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=nf>routeEqual</span><span class=p>(</span><span class=nx>routeList</span><span class=p>[</span><span class=mi>0</span><span class=p>],</span> <span class=o>*</span><span class=nx>route</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Route to %v already exists, skipping.&#34;</span><span class=p>,</span> <span class=nx>route</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=p>}</span> <span class=k>else</span> <span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteAdd</span><span class=p>(</span><span class=nx>route</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Error adding route to %v: %s&#34;</span><span class=p>,</span> <span class=nx>route</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>		<span class=k>return</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>	<span class=c1>// 是否可以正常获取对应条件的路由表, 不理解为什么又要判断. 😅
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>_</span><span class=p>,</span> <span class=nx>err</span> <span class=p>=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteListFiltered</span><span class=p>(</span><span class=nx>ipFamily</span><span class=p>,</span> <span class=o>&amp;</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>{</span><span class=nx>Dst</span><span class=p>:</span> <span class=nx>route</span><span class=p>.</span><span class=nx>Dst</span><span class=p>},</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>RT_FILTER_DST</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Warningf</span><span class=p>(</span><span class=s>&#34;Unable to list routes: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>host-gw</code> 的路由配置原理还是比较简单的. 首先读取整个集群里所有的 node 的 ip 和 cidr 子网等信息, 然后设置对应的路由策略. 在一个 node 节点上含有整个集群的路由信息.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>10.230.10.0/24 dev cni0 proto kernel scope link src 10.230.10.1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>10.244.20.0/24 via 172.16.0.102 dev eth0
+</span></span><span class=line><span class=cl>10.244.21.0/24 via 172.16.0.121 dev eth0
+</span></span><span class=line><span class=cl>10.244.22.0/24 via 172.16.0.122 dev eth0
+</span></span><span class=line><span class=cl>10.244.23.0/24 via 172.16.0.123 dev eth0
+</span></span><span class=line><span class=cl>10.244.24.0/24 via 172.16.0.124 dev eth0
+</span></span><span class=line><span class=cl>10.244.25.0/24 via 172.16.0.125 dev eth0
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><a href=#定时修复路由表><h3 id=定时修复路由表><span class=hanchor arialabel=Anchor># </span>定时修复路由表</h3></a><p><code>routeCheck</code> 会周期性的修复本地的路由表, 检测对比当前主机跟内存路由表, 如有缺失则添加路由规则.</p><p><strong>为什么需要周期性的修复路由表 ?</strong></p><ol><li>某个路由表的规则被手动删除 ? 正常没这个可能.</li><li><code>handleSubnetEvents</code> 在添加路由表时, 对失败的 <code>netlink.RouteAdd</code> 没有重试, 所以在失败后进行周期性的重试.</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kd>const</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>	<span class=nx>routeCheckRetries</span> <span class=p>=</span> <span class=mi>10</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// 周期检查路由表是否有缺失, 有缺失下进行添加路由表.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>func</span> <span class=p>(</span><span class=nx>n</span> <span class=o>*</span><span class=nx>RouteNetwork</span><span class=p>)</span> <span class=nf>routeCheck</span><span class=p>(</span><span class=nx>ctx</span> <span class=nx>context</span><span class=p>.</span><span class=nx>Context</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>ctx</span><span class=p>.</span><span class=nf>Done</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>			<span class=k>return</span>
+</span></span><span class=line><span class=cl>		<span class=k>case</span> <span class=o>&lt;-</span><span class=nx>time</span><span class=p>.</span><span class=nf>After</span><span class=p>(</span><span class=nx>routeCheckRetries</span> <span class=o>*</span> <span class=nx>time</span><span class=p>.</span><span class=nx>Second</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>			<span class=c1>// 每次间隔 10s 秒.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=nx>n</span><span class=p>.</span><span class=nf>checkSubnetExistInV4Routes</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>			<span class=nx>n</span><span class=p>.</span><span class=nf>checkSubnetExistInV6Routes</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>n</span> <span class=o>*</span><span class=nx>RouteNetwork</span><span class=p>)</span> <span class=nf>checkSubnetExistInV4Routes</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>n</span><span class=p>.</span><span class=nf>checkSubnetExistInRoutes</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>routes</span><span class=p>,</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>FAMILY_V4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>n</span> <span class=o>*</span><span class=nx>RouteNetwork</span><span class=p>)</span> <span class=nf>checkSubnetExistInV6Routes</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=nx>n</span><span class=p>.</span><span class=nf>checkSubnetExistInRoutes</span><span class=p>(</span><span class=nx>n</span><span class=p>.</span><span class=nx>v6Routes</span><span class=p>,</span> <span class=nx>netlink</span><span class=p>.</span><span class=nx>FAMILY_V6</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=p>(</span><span class=nx>n</span> <span class=o>*</span><span class=nx>RouteNetwork</span><span class=p>)</span> <span class=nf>checkSubnetExistInRoutes</span><span class=p>(</span><span class=nx>routes</span> <span class=p>[]</span><span class=nx>netlink</span><span class=p>.</span><span class=nx>Route</span><span class=p>,</span> <span class=nx>ipFamily</span> <span class=kt>int</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>	<span class=c1>// 首先通过 netlink 获取当前节点上的所有路由表
+</span></span></span><span class=line><span class=cl><span class=c1></span>	<span class=nx>routeList</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteList</span><span class=p>(</span><span class=kc>nil</span><span class=p>,</span> <span class=nx>ipFamily</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=nx>err</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=c1>// 内存里的配置跟当前的节点配置做遍历对比.
+</span></span></span><span class=line><span class=cl><span class=c1></span>		<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>route</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>routes</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>			<span class=nx>exist</span> <span class=o>:=</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl>			<span class=k>for</span> <span class=nx>_</span><span class=p>,</span> <span class=nx>r</span> <span class=o>:=</span> <span class=k>range</span> <span class=nx>routeList</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nx>r</span><span class=p>.</span><span class=nx>Dst</span> <span class=o>==</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 跳过
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=k>continue</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nf>routeEqual</span><span class=p>(</span><span class=nx>r</span><span class=p>,</span> <span class=nx>route</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=c1>// 一致则标记已存在
+</span></span></span><span class=line><span class=cl><span class=c1></span>					<span class=nx>exist</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>					<span class=k>break</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>			<span class=c1>// 如不存在, 则进行路由表添加, 其实是个修复的过程.
+</span></span></span><span class=line><span class=cl><span class=c1></span>			<span class=k>if</span> <span class=p>!</span><span class=nx>exist</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>				<span class=k>if</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>netlink</span><span class=p>.</span><span class=nf>RouteAdd</span><span class=p>(</span><span class=o>&amp;</span><span class=nx>route</span><span class=p>);</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=k>continue</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>					<span class=nx>log</span><span class=p>.</span><span class=nf>Infof</span><span class=p>(</span><span class=s>&#34;Route recovered %v : %v&#34;</span><span class=p>,</span> <span class=nx>route</span><span class=p>.</span><span class=nx>Dst</span><span class=p>,</span> <span class=nx>route</span><span class=p>.</span><span class=nx>Gw</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>				<span class=p>}</span>
+</span></span><span class=line><span class=cl>			<span class=p>}</span>
+</span></span><span class=line><span class=cl>		<span class=p>}</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>		<span class=nx>log</span><span class=p>.</span><span class=nf>Errorf</span><span class=p>(</span><span class=s>&#34;Error fetching route list. Will automatically retry: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><a href=#host-gw-适用于二层网络><h3 id=host-gw-适用于二层网络><span class=hanchor arialabel=Anchor># </span>host-gw 适用于二层网络</h3></a><p>flannal host-gw 方案当前只适用于同一个二层网络下, node 之间需要在一个 vlan 里, 因为 host-gw 在数据链路层会把目标的 MAC 地址换成目标 node 上的 MAC. 但如果两个 node 在不同的 vlan 虚拟局域网里, 那么由于 vlan 会隔离抑制广播, 通过 arp 广播自然无法拿到目标的 mac 网卡地址, 自然就无法把数据报文发出去.</p><p><img src=https://images.ryken.cloud/2023/11/202302052018408.png width=auto alt=image.png></p><a href=#总结><h2 id=总结><span class=hanchor arialabel=Anchor># </span>总结</h2></a><p>下图 subnet manager 使用 k8s kube-apiserver, backend 选用 vxlan 网络.</p><p><img src=https://images.ryken.cloud/2023/11/202302041931615.png width=auto alt=image.png></p><p>下图 subnet manager 使用 k8s kube-apiserver, backend 选用 host-gw 网络.</p><p><img src=https://images.ryken.cloud/2023/11/202302051020026.png width=auto alt=image.png></p><p>flannel 的实现原理大体分析完了, 其原理就是监听 etcd 或者 k8s apiserver 的 node 对象, 从 node 资源对象中解析到 spec.PodCIDR 等字段来构建 lease 对象. 根据 backend 的类型构建不同的 network 对象.</p><p>network 控制器从 subnet manager 监听获取 lease 对象, 然后配置网络. vxlan network 则需要进行 ARP, FDB, Route 配置流程, 而 host-gw 只需配置路由 route 规则即可.</p><p>本文主要分析的 flannel 的代码实现过程, 后面会跟进继续分析 calico 和 cilium 的实现原理, 请关注订阅
+<a href=http://github.com/rfyiamcool/notes rel=noopener>http://github.com/rfyiamcool/notes</a></p></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
