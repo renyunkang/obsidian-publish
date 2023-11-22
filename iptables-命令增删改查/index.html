@@ -1,0 +1,167 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="iptables预定了4张表，分别是raw表、mangle表、nat表、filter表，不同的表拥有不同的功能。 filter负责过滤功能，比如允许哪些IP地址访问，拒绝哪些IP地址访问，允许访问哪些端口，禁止访问哪些端口，filter表会根据我们定义的规则进行过滤，filter表应该是最常用到的表了。
+iptable查看命令 iptables -L：显示所有的规则（默认为filter表） 绿色标注的规则是Centos6启动iptables以后默认设置的规则，蓝色标注部分为链，INPUT链、FORWARD链、OUTPUT链，每条链中都有自己的规则。
+iptables -t nat -L：显示nat表中的所有规则（使用-t 选定表）
+iptables -t filter -L INPUT：显示filter表中的所有INPUT规则
+1 2 3 4 5 6 7 8 9 10  root@ubuntu:/home/mind/Program/test# iptables -t filter -L INPUT Chain INPUT (policy ACCEPT) target prot opt source destination ACCEPT all -- anywhere anywhere ACCEPT all -- anywhere anywhere state RELATED,ESTABLISHED ACCEPT tcp -- anywhere anywhere tcp dpt:ssh ACCEPT tcp -- anywhere anywhere tcp dpt:http ACCEPT tcp -- anywhere anywhere tcp dpt:https DROP tcp -- anywhere anywhere tcp dpt:mysql ACCEPT icmp -- anywhere anywhere icmp echo-request   iptables -t filter -vL INPUT：加上-v 显示更详细的信息"><title>Knowledge Garden</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.3b8030fcccc8b07d788e84c900adb110.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.a67ac54c3c2209ef7eddcb2b70da1f42.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>最近编辑于
+May 6, 2023</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#iptable查看命令>iptable查看命令</a></li><li><a href=#添加规则>添加规则</a><ol><li><a href=#指定编号插入>指定编号插入</a></li></ol></li><li><a href=#删除规则>删除规则</a><ol><li><a href=#根据编号删除>根据编号删除</a></li><li><a href=#根据具体的匹配条件与动作删除>根据具体的匹配条件与动作删除</a></li><li><a href=#删除某条链上的所有规则>删除某条链上的所有规则</a></li></ol></li><li><a href=#修改规则>修改规则</a><ol><li><a href=#修改指定链的匹配规则>修改指定链的匹配规则</a></li><li><a href=#修改指定链的默认策略>修改指定链的默认策略</a></li></ol></li><li><a href=#保存规则>保存规则</a><ol><li><a href=#1ubuntu-通用的保存重载规则>1.Ubuntu 通用的保存/重载规则</a></li><li><a href=#2centos-redhat>2.CentOS, RedHat</a></li></ol></li></ol></nav></details></aside><p>iptables预定了4张表，分别是raw表、mangle表、nat表、filter表，不同的表拥有不同的功能。
+filter负责<strong>过滤功能</strong>，比如允许哪些IP地址访问，拒绝哪些IP地址访问，允许访问哪些端口，禁止访问哪些端口，filter表会根据我们定义的规则进行过滤，filter表应该是最常用到的表了。</p><a href=#iptable查看命令><h2 id=iptable查看命令><span class=hanchor arialabel=Anchor># </span>iptable查看命令</h2></a><p><code>iptables -L</code>：显示所有的规则（默认为filter表）
+<img src="https://cdn.nlark.com/yuque/0/2021/png/12923798/1625129532044-09fbb25c-59fb-44d6-ab22-653cb7c28535.png#align=left&display=inline&height=337&originHeight=337&originWidth=1000&size=0&status=done&style=none&width=1000" width=auto alt>
+绿色标注的规则是Centos6启动iptables以后默认设置的规则，蓝色标注部分为链，INPUT链、FORWARD链、OUTPUT链，每条链中都有自己的规则。</p><p><code>iptables -t nat -L</code>：显示nat表中的所有规则（使用-t 选定表）</p><p><code>iptables -t filter -L INPUT</code>：显示filter表中的所有INPUT规则</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@ubuntu:/home/mind/Program/test# iptables -t filter -L INPUT
+</span></span><span class=line><span class=cl>Chain INPUT <span class=o>(</span>policy ACCEPT<span class=o>)</span>
+</span></span><span class=line><span class=cl>target     prot opt <span class=nb>source</span>               destination
+</span></span><span class=line><span class=cl>ACCEPT     all  --  anywhere             anywhere
+</span></span><span class=line><span class=cl>ACCEPT     all  --  anywhere             anywhere             state RELATED,ESTABLISHED
+</span></span><span class=line><span class=cl>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:ssh
+</span></span><span class=line><span class=cl>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:http
+</span></span><span class=line><span class=cl>ACCEPT     tcp  --  anywhere             anywhere             tcp dpt:https
+</span></span><span class=line><span class=cl>DROP       tcp  --  anywhere             anywhere             tcp dpt:mysql
+</span></span><span class=line><span class=cl>ACCEPT     icmp --  anywhere             anywhere             icmp echo-request
+</span></span></code></pre></td></tr></table></div></div><p><code>iptables -t filter -vL INPUT</code>：加上-v 显示更详细的信息</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@ubuntu:/home/mind/Program/test# iptables -t filter -vL INPUT
+</span></span><span class=line><span class=cl>Chain INPUT <span class=o>(</span>policy ACCEPT <span class=m>2242</span> packets, 257K bytes<span class=o>)</span>
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     <span class=nb>source</span>               destination
+</span></span><span class=line><span class=cl> <span class=m>6076</span>  601K ACCEPT     all  --  lo     any     anywhere             anywhere
+</span></span><span class=line><span class=cl> 982K   50M ACCEPT     all  --  any    any     anywhere             anywhere             state RELATED,ESTABLISHED
+</span></span><span class=line><span class=cl>    <span class=m>2</span>   <span class=m>104</span> ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:ssh
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:http
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     tcp  --  any    any     anywhere             anywhere             tcp dpt:https
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> DROP       tcp  --  any    any     anywhere             anywhere             tcp dpt:mysql
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     icmp --  any    any     anywhere             anywhere             icmp echo-request
+</span></span></code></pre></td></tr></table></div></div><ul><li><strong>pkts</strong>:对应规则匹配到的报文的个数。</li><li><strong>bytes</strong>:对应匹配到的报文包的大小总和。</li><li><strong>target</strong>:规则对应的target，往往表示规则对应的”动作”，即规则匹配成功后需要采取的措施。</li><li><strong>prot</strong>:表示规则对应的协议，是否只针对某些协议应用此规则。</li><li><strong>opt</strong>:表示规则对应的选项。</li><li><strong>in</strong>:表示数据包由哪个接口(网卡)流入，我们可以设置通过哪块网卡流入的报文需要匹配当前规则。</li><li><strong>out</strong>:表示数据包由哪个接口(网卡)流出，我们可以设置通过哪块网卡流出的报文需要匹配当前规则。</li><li><strong>source</strong>:表示规则对应的源头地址，可以是一个IP，也可以是一个网段。</li><li><strong>destination</strong>:表示规则对应的目标地址。可以是一个IP，也可以是一个网段。</li></ul><p><code>iptables -t filter –line-numbers -L INPUT</code>
+使用–line-numbers即可显示规则的编号</p><p><code>iptables -t filter –line-numbers -nL INPUT</code>
+表示查看表的所有规则，并且在显示规则时，不对规则中的IP或者端口进行名称反解，-n选项表示不解析IP地址。</p><p><code>iptables -t filter –line-numbers -nvxL INPUT</code>
+表示查看表中的所有规则，并且显示更详细的信息(-v选项)，不过，计数器中的信息显示为精确的计数值，而不是显示为经过可读优化的计数值，-x选项表示显示计数器的精确值。</p><a href=#添加规则><h2 id=添加规则><span class=hanchor arialabel=Anchor># </span>添加规则</h2></a><p><code>iptables -t 表名 -A 链名 匹配条件 -j 动作</code>
+<code>iptables -t 表名 -I 链名 匹配条件 -j 动作</code>
+<code>iptables -t filter -I INPUT -s 10.0.1.232 -j DROP</code></p><ul><li>-t选项：指定要操作的表， 不使用-t选项指定表时，默认为操作filter表。</li><li>-I选项：指明将规则插入（insert）至哪个链中，-I INPUT表示将规则插入于INPUT链中。</li><li>-s选项：指明匹配条件中的源地址source。</li><li>-j选项：指明当匹配条件被满足时，所对应的动作，上例中指定的动作为DROP（丢弃）。</li><li>-A选项：在对应的链中追加（append）规则，-A表示在链的尾部追加规则，-I表示在链的首部插入规则</li></ul><p><strong>规则的顺序很重要</strong>。如果报文已经被前面的规则匹配到，iptables则会对报文执行对应的动作，即使后面的规则也能匹配到当前报文，很有可能也没有机会再对报文执行相应的动作了。这就是iptables的工作机制。</p><a href=#指定编号插入><h3 id=指定编号插入><span class=hanchor arialabel=Anchor># </span>指定编号插入</h3></a><p><code>iptables -t 表名 -I 链名 规则序号 匹配条件 -j 动作</code>
+<code>iptables -t filter -I INPUT 2 -s 10.0.1.233 -j DROP</code></p><ul><li>-I INPUT 2表示在INPUT链中新增规则，新增的规则的编号为2</li></ul><a href=#删除规则><h2 id=删除规则><span class=hanchor arialabel=Anchor># </span>删除规则</h2></a><a href=#根据编号删除><h3 id=根据编号删除><span class=hanchor arialabel=Anchor># </span>根据编号删除</h3></a><p><code>iptables -t 表名 -D 链名 规则序号</code>
+<code>iptables -t filter -D INPUT 2</code></p><a href=#根据具体的匹配条件与动作删除><h3 id=根据具体的匹配条件与动作删除><span class=hanchor arialabel=Anchor># </span>根据具体的匹配条件与动作删除</h3></a><p><code>iptables -t 表名 -D 链名 匹配条件 -j 动作</code>
+<code>iptables -D INPUT -s 10.0.1.232 -j DROP</code></p><a href=#删除某条链上的所有规则><h3 id=删除某条链上的所有规则><span class=hanchor arialabel=Anchor># </span>删除某条链上的所有规则</h3></a><p><code>iptables -t 表名 -F 链名</code>
+<code>iptables -t nat -F</code>
+<code>iptables -F INPUT</code></p><a href=#修改规则><h2 id=修改规则><span class=hanchor arialabel=Anchor># </span>修改规则</h2></a><a href=#修改指定链的匹配规则><h3 id=修改指定链的匹配规则><span class=hanchor arialabel=Anchor># </span>修改指定链的匹配规则</h3></a><p><code>iptables -t 表名 -R 链名 规则序号 规则原本的匹配条件 -j 动作</code>
+<code>iptables -R INPUT 1 -j REJECT</code>
+-R选项表示修改指定的链
+-R INPUT 1表示修改INPUT链的第1条规则
+【注意】：使用-R修改某个规则时，必须指定规则对应的原本匹配条件</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@ubuntu:/home/orange# iptables -nvL INPUT
+</span></span><span class=line><span class=cl>Chain INPUT <span class=o>(</span>policy ACCEPT 172K packets, 348M bytes<span class=o>)</span>
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     <span class=nb>source</span>               destination         
+</span></span><span class=line><span class=cl>  <span class=m>727</span> <span class=m>68697</span> DROP       all  --  *      *       10.0.1.232           0.0.0.0/0           
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> DROP       all  --  *      *       10.0.1.233           0.0.0.0/0           
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     all  --  *      *       10.0.1.232           0.0.0.0/0           
+</span></span><span class=line><span class=cl>root@ubuntu:/home/orange# iptables -R INPUT <span class=m>1</span> -j REJECT
+</span></span><span class=line><span class=cl>root@ubuntu:/home/orange# iptables -nvL INPUT
+</span></span><span class=line><span class=cl>Chain INPUT <span class=o>(</span>policy ACCEPT <span class=m>0</span> packets, <span class=m>0</span> bytes<span class=o>)</span>
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     <span class=nb>source</span>               destination         
+</span></span><span class=line><span class=cl>    <span class=m>1</span>   <span class=m>332</span> REJECT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> DROP       all  --  *      *       10.0.1.233           0.0.0.0/0           
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     all  --  *      *       10.0.1.232           0.0.0.0/0  
+</span></span></code></pre></td></tr></table></div></div><p>从上例中看出因为没有指定原本的源地址，当前规则的源地址自动变为0.0.0.0/0。如果你想要修改某条规则，还不如先将这条规则删除，然后在同样位置再插入一条新规则，这样更好，当然，如果你只是为了修改某条规则的动作，那么使用-R选项时，不要忘了指明规则原本对应的匹配条件。</p><a href=#修改指定链的默认策略><h3 id=修改指定链的默认策略><span class=hanchor arialabel=Anchor># </span>修改指定链的默认策略</h3></a><p>当报文没有被链中的任何规则匹配到时，或者当链中没有任何规则时，防火墙会按照默认动作处理报文
+<code>iptables -t 表名 -P 链名 动作</code>
+<code>iptables -t filter -P INPUT DROP</code>
+-t指定要操作的表
+-P选项指定要修改的链后加上默认策略</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@ubuntu:/home/orange# iptables -nvL INPUT
+</span></span><span class=line><span class=cl>Chain INPUT <span class=o>(</span>policy ACCEPT <span class=m>0</span> packets, <span class=m>0</span> bytes<span class=o>)</span>
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     <span class=nb>source</span>               destination         
+</span></span><span class=line><span class=cl>    <span class=m>1</span>   <span class=m>332</span> REJECT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> DROP       all  --  *      *       10.0.1.233           0.0.0.0/0           
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     all  --  *      *       10.0.1.232           0.0.0.0/0           
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>root@ubuntu:/home/orange# iptables -t filter -P INPUT DROP
+</span></span><span class=line><span class=cl>root@ubuntu:/home/orange# iptables -nvL INPUT
+</span></span><span class=line><span class=cl>Chain INPUT <span class=o>(</span>policy DROP <span class=m>0</span> packets, <span class=m>0</span> bytes<span class=o>)</span>
+</span></span><span class=line><span class=cl> pkts bytes target     prot opt in     out     <span class=nb>source</span>               destination         
+</span></span><span class=line><span class=cl> <span class=m>1246</span>  139K REJECT     all  --  *      *       0.0.0.0/0            0.0.0.0/0            reject-with icmp-port-unreachable
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> DROP       all  --  *      *       10.0.1.233           0.0.0.0/0           
+</span></span><span class=line><span class=cl>    <span class=m>0</span>     <span class=m>0</span> ACCEPT     all  --  *      *       10.0.1.232           0.0.0.0/0    
+</span></span></code></pre></td></tr></table></div></div><a href=#保存规则><h2 id=保存规则><span class=hanchor arialabel=Anchor># </span>保存规则</h2></a><a href=#1ubuntu-通用的保存重载规则><h3 id=1ubuntu-通用的保存重载规则><span class=hanchor arialabel=Anchor># </span>1.Ubuntu 通用的保存/重载规则</h3></a><p><strong>保存现有的规则：</strong>
+<code>iptables-save > /etc/iptables.rules</code></p><p>然后新建一个bash脚本，并保存到/etc/network/if-pre-up.d/目录下：
+<code>#!/bin/bash</code>
+<code>iptables-restore &lt; /etc/iptables.rules</code>
+这样，每次系统重启后iptables规则都会被自动加载。
+注意：不要尝试在.bashrc或者.profile中执行以上命令，因为用户通常不是root，而且这只能在登录时加载iptables规</p><a href=#2centos-redhat><h3 id=2centos-redhat><span class=hanchor arialabel=Anchor># </span>2.CentOS, RedHat</h3></a><p><strong>保存iptables规则</strong>
+<code>service iptables save</code>
+<strong>重启iptables服务</strong>
+<code>service iptables stop</code>
+<code>service iptables start</code>
+<strong>查看当前规则：</strong>
+<code>cat  /etc/sysconfig/iptables</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># centos7中配置iptables-service的步骤</span>
+</span></span><span class=line><span class=cl><span class=c1>#配置好yum源以后安装iptables-service</span>
+</span></span><span class=line><span class=cl>yum install -y iptables-services
+</span></span><span class=line><span class=cl><span class=c1>#停止firewalld</span>
+</span></span><span class=line><span class=cl>systemctl stop firewalld
+</span></span><span class=line><span class=cl><span class=c1>#禁止firewalld自动启动</span>
+</span></span><span class=line><span class=cl>systemctl disable firewalld
+</span></span><span class=line><span class=cl><span class=c1>#启动iptables</span>
+</span></span><span class=line><span class=cl>systemctl start iptables
+</span></span><span class=line><span class=cl><span class=c1>#将iptables设置为开机自动启动，以后即可通过iptables-service控制iptables服务</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> iptables
+</span></span></code></pre></td></tr></table></div></div></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
