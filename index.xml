@@ -257,7 +257,7 @@ ready live calico-node 容器以runit 作为进程管理工具，运行多个进
 ctrl+e**: 移到行尾（end）**
 ctrl+b: 前移一个字符(backward)
 ctrl+f: 后移一个字符(forward)
-alt+b: 前移一个单词</description></item><item><title>CloudNative</title><link>https://www.ryken.cloud/CloudNative/</link><pubDate>Mon, 10 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/CloudNative/</guid><description>1 2 list from &amp;#34;CloudNative&amp;#34; sort file.ctime</description></item><item><title>felix env</title><link>https://www.ryken.cloud/felix-env/</link><pubDate>Mon, 10 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/felix-env/</guid><description>日志：
+alt+b: 前移一个单词</description></item><item><title>felix env</title><link>https://www.ryken.cloud/felix-env/</link><pubDate>Mon, 10 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/felix-env/</guid><description>日志：
 FELIX_EARLYLOGSEVERITYSCREEN FELIX_LOGSEVERITYSCREEN go 垃圾回收
 GOGC BPF 模式
 KUBERNETES_SERVICE_HOST KUBERNETES_SERVICE_PORT 循环加载配置 - 直到 data store ready</description></item><item><title>FrequentlyUsed</title><link>https://www.ryken.cloud/FrequentlyUsed/</link><pubDate>Mon, 10 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/FrequentlyUsed/</guid><description>set [[build record]] [[shell 常用]] [[ssh]]</description></item><item><title>启动 startup</title><link>https://www.ryken.cloud/%E5%90%AF%E5%8A%A8-startup/</link><pubDate>Mon, 10 Apr 2023 00:00:00 +0000</pubDate><guid>https://www.ryken.cloud/%E5%90%AF%E5%8A%A8-startup/</guid><description>startup 启动流程：
