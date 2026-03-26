@@ -1,0 +1,384 @@
+<!doctype html><html lang=en><head><script async defer data-website-id=08a754c4-6690-46d7-bb80-8ff93cfa232f src=https://umami.oldwinter.top/umami.js></script><meta charset=utf-8><meta name=description content="Cilium NetworkPolicy 模板集 这份模板集配合主手册一起使用:
+ 主手册: docs/cilium-network-policy-safe-rollout.md  所有模板都需要你按实际环境替换占位符。不要直接无脑套用。
+占位符说明  <namespace>: 目标命名空间 <src-namespace>: 来源命名空间 <app-label-key> / <app-label-value>: 目标 Pod 标签 <src-label-key> / <src-label-value>: 来源 Pod 标签 <dst-port>: 目标端口 <fqdn>: 外部域名 <cidr>: 外部网段  模板 1: 仅观测 DNS，不触发默认拒绝 适用场景:"><title>Knowledge Garden</title><meta name=viewport content="width=device-width,initial-scale=1"><link rel="shortcut icon" type=image/png href=https://www.ryken.cloud//icon.png><link href=https://www.ryken.cloud/styles.b3e1e36b0403ac565c9392b3e23ef3b6.min.css rel=stylesheet><link href=https://www.ryken.cloud/styles/_light_syntax.86a48a52faebeaaf42158b72922b1c90.min.css rel=stylesheet id=theme-link><script src=https://www.ryken.cloud/js/darkmode.66c3ed4615b59e04fa897375e67b0fe2.min.js></script>
+<script src=https://www.ryken.cloud/js/util.9825137f5e7825e8553c68ce39ac9e44.min.js></script>
+<link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css integrity=sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs crossorigin=anonymous><script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js integrity=sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx crossorigin=anonymous></script>
+<script defer src=https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js integrity=sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR crossorigin=anonymous></script>
+<script src=https://unpkg.com/@floating-ui/core@0.7.3></script>
+<script src=https://unpkg.com/@floating-ui/dom@0.5.4></script>
+<script src=https://www.ryken.cloud/js/popover.abe6a51cc7138c5dff00f151dd627ad1.min.js></script>
+<script src=https://www.ryken.cloud/js/code-title.b35124ad8db0ba37162b886afb711cbc.min.js></script>
+<script src=https://www.ryken.cloud/js/clipboard.c20857734e53a3fb733b7443879efa61.min.js></script>
+<script src=https://www.ryken.cloud/js/callouts.7723cac461d613d118ee8bb8216b9838.min.js></script>
+<script>const BASE_URL="https://www.ryken.cloud/",fetchData=Promise.all([fetch("https://www.ryken.cloud/indices/linkIndex.fcf8f2934903d7765ab18f4b8aa85295.min.json").then(e=>e.json()).then(e=>({index:e.index,links:e.links})),fetch("https://www.ryken.cloud/indices/contentIndex.2129a9b395eac7407557db9d3c67d8bc.min.json").then(e=>e.json())]).then(([{index:e,links:t},n])=>({index:e,links:t,content:n})),render=()=>{const e=new URL(BASE_URL),t=e.pathname,n=window.location.pathname,s=t==n;addCopyButtons(),addCollapsibleCallouts(),initPopover("https://www.ryken.cloud",!0,!0);const o=document.getElementById("footer");if(o){const e=document.getElementById("graph-container");if(!e)return requestAnimationFrame(render);e.textContent="";const t=s&&!1;drawGraph("https://www.ryken.cloud",t,[{"/moc":"#4388cc"}],t?{centerForce:1,depth:-1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.5,linkDistance:1,opacityScale:3,repelForce:1,scale:1.4}:{centerForce:1,depth:1,enableDrag:!0,enableLegend:!1,enableZoom:!0,fontSize:.6,linkDistance:1,opacityScale:3,repelForce:2,scale:1.2})}},init=(e=document)=>{addCopyButtons(),addTitleToCodeBlocks(),renderMathInElement(e.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1}],throwOnError:!1})}</script><script>window.Million={navigate:e=>window.location.href=e,prefetch:()=>{}},window.addEventListener("DOMContentLoaded",()=>{init(),render()})</script></head><script async src="https://www.googletagmanager.com/gtag/js?id=G-11MD77L81V"></script>
+<script>var doNotTrack=!1;if(!doNotTrack){window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date),gtag("config","G-11MD77L81V",{anonymize_ip:!1})}</script><body><div id=search-container><div id=search-space><input autocomplete=off id=search-bar name=search type=text aria-label=search placeholder=支持标题及全文搜索...><div id=results-container></div></div></div><script src=https://cdn.jsdelivr.net/npm/flexsearch@0.7.21/dist/flexsearch.bundle.js integrity="sha256-i3A0NZGkhsKjVMzFxv3ksk0DZh3aXqu0l49Bbh0MdjE=" crossorigin=anonymous defer></script>
+<script defer src=https://www.ryken.cloud/js/full-text-search.24827f874defbbc6d529926cbfcfb493.min.js></script><div class=singlePage><header><h1 id=page-title><a href=https://www.ryken.cloud/>Knowledge Garden</a></h1><div class=spacer></div><div id=search-icon><p>search</p><svg tabindex="0" aria-labelledby="title desc" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7"><title id="title">Search Icon</title><desc id="desc">Icon to open search</desc><g class="search-path" fill="none"><path stroke-linecap="square" d="M18.5 18.3l-5.4-5.4"/><circle cx="8" cy="8" r="7"/></g></svg></div><div class=darkmode><input class=toggle id=darkmode-toggle type=checkbox tabindex=-1>
+<label id=toggle-label-light for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="dayIcon" viewBox="0 0 35 35" style="enable-background:new 0 0 35 35"><title>Light Mode</title><path d="M6 17.5C6 16.672 5.328 16 4.5 16h-3C.672 16 0 16.672.0 17.5S.672 19 1.5 19h3C5.328 19 6 18.328 6 17.5zM7.5 26c-.414.0-.789.168-1.061.439l-2 2C4.168 28.711 4 29.086 4 29.5 4 30.328 4.671 31 5.5 31c.414.0.789-.168 1.06-.44l2-2C8.832 28.289 9 27.914 9 27.5 9 26.672 8.329 26 7.5 26zm10-20C18.329 6 19 5.328 19 4.5v-3C19 .672 18.329.0 17.5.0S16 .672 16 1.5v3C16 5.328 16.671 6 17.5 6zm10 3c.414.0.789-.168 1.06-.439l2-2C30.832 6.289 31 5.914 31 5.5 31 4.672 30.329 4 29.5 4c-.414.0-.789.168-1.061.44l-2 2C26.168 6.711 26 7.086 26 7.5 26 8.328 26.671 9 27.5 9zM6.439 8.561C6.711 8.832 7.086 9 7.5 9 8.328 9 9 8.328 9 7.5c0-.414-.168-.789-.439-1.061l-2-2C6.289 4.168 5.914 4 5.5 4 4.672 4 4 4.672 4 5.5c0 .414.168.789.439 1.06l2 2.001zM33.5 16h-3c-.828.0-1.5.672-1.5 1.5s.672 1.5 1.5 1.5h3c.828.0 1.5-.672 1.5-1.5S34.328 16 33.5 16zM28.561 26.439C28.289 26.168 27.914 26 27.5 26c-.828.0-1.5.672-1.5 1.5.0.414.168.789.439 1.06l2 2C28.711 30.832 29.086 31 29.5 31c.828.0 1.5-.672 1.5-1.5.0-.414-.168-.789-.439-1.061l-2-2zM17.5 29c-.829.0-1.5.672-1.5 1.5v3c0 .828.671 1.5 1.5 1.5s1.5-.672 1.5-1.5v-3C19 29.672 18.329 29 17.5 29zm0-22C11.71 7 7 11.71 7 17.5S11.71 28 17.5 28 28 23.29 28 17.5 23.29 7 17.5 7zm0 18c-4.136.0-7.5-3.364-7.5-7.5s3.364-7.5 7.5-7.5 7.5 3.364 7.5 7.5S21.636 25 17.5 25z"/></svg></label><label id=toggle-label-dark for=darkmode-toggle tabindex=-1><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" id="nightIcon" viewBox="0 0 100 100" style="enable-background='new 0 0 100 100'"><title>Dark Mode</title><path d="M96.76 66.458c-.853-.852-2.15-1.064-3.23-.534-6.063 2.991-12.858 4.571-19.655 4.571C62.022 70.495 50.88 65.88 42.5 57.5 29.043 44.043 25.658 23.536 34.076 6.47c.532-1.08.318-2.379-.534-3.23-.851-.852-2.15-1.064-3.23-.534-4.918 2.427-9.375 5.619-13.246 9.491-9.447 9.447-14.65 22.008-14.65 35.369.0 13.36 5.203 25.921 14.65 35.368s22.008 14.65 35.368 14.65c13.361.0 25.921-5.203 35.369-14.65 3.872-3.871 7.064-8.328 9.491-13.246C97.826 68.608 97.611 67.309 96.76 66.458z"/></svg></label></div></header><article><p class=meta>最近编辑于
+Mar 26, 2026</p><ul class=tags></ul><aside class=mainTOC><details><summary>目录</summary><nav id=TableOfContents><ol><li><a href=#占位符说明>占位符说明</a></li><li><a href=#模板-1-仅观测-dns不触发默认拒绝>模板 1: 仅观测 DNS，不触发默认拒绝</a></li><li><a href=#模板-2-命名空间内互通基线>模板 2: 命名空间内互通基线</a></li><li><a href=#模板-3-放行-dns-到-kube-dns>模板 3: 放行 DNS 到 kube-dns</a></li><li><a href=#模板-4-放行-kube-apiserver>模板 4: 放行 kube-apiserver</a></li><li><a href=#模板-5-只允许某个来源服务访问某个目标服务>模板 5: 只允许某个来源服务访问某个目标服务</a></li><li><a href=#模板-6-允许来自另一个-namespace-的来源访问>模板 6: 允许来自另一个 namespace 的来源访问</a></li><li><a href=#模板-7-只允许访问集群内部>模板 7: 只允许访问集群内部</a></li><li><a href=#模板-8-允许访问单个外部域名>模板 8: 允许访问单个外部域名</a></li><li><a href=#模板-9-允许访问一个外部网段并排除子网段>模板 9: 允许访问一个外部网段，并排除子网段</a></li><li><a href=#模板-10-http-l7-限制>模板 10: HTTP L7 限制</a></li><li><a href=#模板-11-显式默认拒绝某个工作负载>模板 11: 显式默认拒绝某个工作负载</a></li><li><a href=#套用顺序建议>套用顺序建议</a></li><li><a href=#使用前自检>使用前自检</a></li><li><a href=#参考资料>参考资料</a></li></ol></nav></details></aside><a href=#cilium-networkpolicy-模板集><h1 id=cilium-networkpolicy-模板集><span class=hanchor arialabel=Anchor># </span>Cilium NetworkPolicy 模板集</h1></a><p>这份模板集配合主手册一起使用:</p><ul><li>主手册:
+<a rel=noopener class="internal-link broken" data-src=/Volumes/MOVESPEED/Program/CloudNative/bgpfilter/docs/cilium-network-policy-safe-rollout>docs/cilium-network-policy-safe-rollout.md</a></li></ul><p>所有模板都需要你按实际环境替换占位符。不要直接无脑套用。</p><a href=#占位符说明><h2 id=占位符说明><span class=hanchor arialabel=Anchor># </span>占位符说明</h2></a><ul><li><code>&lt;namespace></code>: 目标命名空间</li><li><code>&lt;src-namespace></code>: 来源命名空间</li><li><code>&lt;app-label-key></code> / <code>&lt;app-label-value></code>: 目标 Pod 标签</li><li><code>&lt;src-label-key></code> / <code>&lt;src-label-value></code>: 来源 Pod 标签</li><li><code>&lt;dst-port></code>: 目标端口</li><li><code>&lt;fqdn></code>: 外部域名</li><li><code>&lt;cidr></code>: 外部网段</li></ul><a href=#模板-1-仅观测-dns不触发默认拒绝><h2 id=模板-1-仅观测-dns不触发默认拒绝><span class=hanchor arialabel=Anchor># </span>模板 1: 仅观测 DNS，不触发默认拒绝</h2></a><p>适用场景:</p><ul><li>你还在摸底期</li><li>你想让 Cilium 看到 DNS 流量</li><li>你还不想因为第一条策略就进入默认拒绝</li></ul><p>注意:</p><ul><li>这个模板里的 <code>enableDefaultDeny: false</code> 只适合 L3/L4 观测思路。</li><li>官方文档明确说明，这个字段不适用于 L7 规则带来的所有拦截场景。</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>dns-observe-no-deny</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>enableDefaultDeny</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ingress</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>egress</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w> </span>{}<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&#34;k8s:io.kubernetes.pod.namespace&#34;: </span><span class=l>kube-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&#34;k8s:k8s-app&#34;: </span><span class=l>kube-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>toPorts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;53&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>UDP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;53&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>dns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>matchPattern</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-2-命名空间内互通基线><h2 id=模板-2-命名空间内互通基线><span class=hanchor arialabel=Anchor># </span>模板 2: 命名空间内互通基线</h2></a><p>适用场景:</p><ul><li>你准备开始上策略</li><li>但不想先打断同命名空间里的服务互调</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-within-namespace</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w> </span>{}<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>fromEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- {}<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- {}<span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-3-放行-dns-到-kube-dns><h2 id=模板-3-放行-dns-到-kube-dns><span class=hanchor arialabel=Anchor># </span>模板 3: 放行 DNS 到 kube-dns</h2></a><p>适用场景:</p><ul><li>应用需要解析域名</li><li>后续要使用 <code>toFQDNs</code></li></ul><p>说明:</p><ul><li>如果你的集群 DNS Pod 标签不是 <code>k8s-app: kube-dns</code>，请先改成实际标签。</li><li>某些环境里你需要把 <code>k8s:k8s-app</code> 改成实际可见标签，例如 <code>k8s:k8s-app: coredns</code>。</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w> </span>{}<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&#34;k8s:io.kubernetes.pod.namespace&#34;: </span><span class=l>kube-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&#34;k8s:k8s-app&#34;: </span><span class=l>kube-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>toPorts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;53&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>UDP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;53&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>dns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>matchPattern</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-4-放行-kube-apiserver><h2 id=模板-4-放行-kube-apiserver><span class=hanchor arialabel=Anchor># </span>模板 4: 放行 kube-apiserver</h2></a><p>适用场景:</p><ul><li>应用或 sidecar 需要访问 Kubernetes API</li><li>组件依赖 watch、lease、leader election、CRD 查询等能力</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-kube-apiserver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toEntities</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>kube-apiserver</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-5-只允许某个来源服务访问某个目标服务><h2 id=模板-5-只允许某个来源服务访问某个目标服务><span class=hanchor arialabel=Anchor># </span>模板 5: 只允许某个来源服务访问某个目标服务</h2></a><p>适用场景:</p><ul><li>明确的服务到服务调用</li><li>来源和目标在同一个命名空间</li><li>只想放行固定标签来源和固定端口</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-specific-client</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>fromEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&lt;src-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;src-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>toPorts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;&lt;dst-port&gt;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-6-允许来自另一个-namespace-的来源访问><h2 id=模板-6-允许来自另一个-namespace-的来源访问><span class=hanchor arialabel=Anchor># </span>模板 6: 允许来自另一个 namespace 的来源访问</h2></a><p>适用场景:</p><ul><li>来源服务和目标服务不在同一个 namespace</li><li>你要显式控制跨 namespace 调用</li></ul><p>说明:</p><ul><li>不要再用已经废弃的 <code>fromRequires</code> / <code>toRequires</code> 思路。</li><li>直接在 <code>fromEndpoints</code> 里同时写来源 namespace 和来源标签。</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-cross-namespace-client</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>fromEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&#34;k8s:io.kubernetes.pod.namespace&#34;: </span><span class=l>&lt;src-namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&lt;src-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;src-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>toPorts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;&lt;dst-port&gt;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-7-只允许访问集群内部><h2 id=模板-7-只允许访问集群内部><span class=hanchor arialabel=Anchor># </span>模板 7: 只允许访问集群内部</h2></a><p>适用场景:</p><ul><li>你想先把 Pod 的互联网访问断掉</li><li>但还想保留集群内横向通信</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>egress-cluster-only</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toEntities</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>cluster</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-8-允许访问单个外部域名><h2 id=模板-8-允许访问单个外部域名><span class=hanchor arialabel=Anchor># </span>模板 8: 允许访问单个外部域名</h2></a><p>适用场景:</p><ul><li>应用只需要访问少量外部域名</li><li>你已经先放行了 DNS</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-external-fqdn</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toFQDNs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchName</span><span class=p>:</span><span class=w> </span><span class=l>&lt;fqdn&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>toPorts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-9-允许访问一个外部网段并排除子网段><h2 id=模板-9-允许访问一个外部网段并排除子网段><span class=hanchor arialabel=Anchor># </span>模板 9: 允许访问一个外部网段，并排除子网段</h2></a><p>适用场景:</p><ul><li>对接方给的是固定 CIDR</li><li>其中有一段你不想放行</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-partner-cidr</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>toCIDRSet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>cidr</span><span class=p>:</span><span class=w> </span><span class=l>&lt;cidr&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>except</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=m>203.0.113.128</span><span class=l>/25</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-10-http-l7-限制><h2 id=模板-10-http-l7-限制><span class=hanchor arialabel=Anchor># </span>模板 10: HTTP L7 限制</h2></a><p>适用场景:</p><ul><li>你确实需要按 HTTP 方法和路径收紧</li><li>目标端口明确就是 HTTP</li></ul><p>不适用:</p><ul><li>TCP 直连服务</li><li>gRPC 以外的非 HTTP 协议</li><li>还没把 L3/L4 先理清的情况</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>allow-http-paths</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>fromEndpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>&lt;src-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;src-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>toPorts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;&lt;dst-port&gt;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>protocol</span><span class=p>:</span><span class=w> </span><span class=l>TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>http</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>method</span><span class=p>:</span><span class=w> </span><span class=l>GET</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>^/health$</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>method</span><span class=p>:</span><span class=w> </span><span class=l>POST</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>^/orders$</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#模板-11-显式默认拒绝某个工作负载><h2 id=模板-11-显式默认拒绝某个工作负载><span class=hanchor arialabel=Anchor># </span>模板 11: 显式默认拒绝某个工作负载</h2></a><p>适用场景:</p><ul><li>你已经补齐了必要 allow</li><li>你想明确把目标工作负载收紧成默认拒绝</li></ul><p>说明:</p><ul><li>在 Cilium 里，只要策略选中了 Pod，并且包含 <code>ingress</code> 或 <code>egress</code> 段，该方向就会进入默认拒绝。</li><li>下面这个模板是最直观的“先拒绝，再补 allow”写法。</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>cilium.io/v2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>CiliumNetworkPolicy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>default-deny-selected-app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>&lt;namespace&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>endpointSelector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>&lt;app-label-key&gt;</span><span class=p>:</span><span class=w> </span><span class=l>&lt;app-label-value&gt;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- {}<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>egress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- {}<span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><a href=#套用顺序建议><h2 id=套用顺序建议><span class=hanchor arialabel=Anchor># </span>套用顺序建议</h2></a><p>最稳妥的组合通常是:</p><ol><li>模板 2: 命名空间内互通基线</li><li>模板 3: DNS</li><li>模板 4: kube-apiserver</li><li>模板 5 或模板 6: 业务依赖</li><li>模板 7、模板 8 或模板 9: 出向依赖</li><li>模板 10: 必要时再加 L7</li><li>模板 11: 最后进入显式默认拒绝</li></ol><a href=#使用前自检><h2 id=使用前自检><span class=hanchor arialabel=Anchor># </span>使用前自检</h2></a><p>应用前至少确认:</p><ul><li>目标 Pod 的标签没有写错</li><li>DNS Pod 的标签和你集群一致</li><li>端口协议和实际服务一致</li><li>如果写了 <code>toFQDNs</code>，DNS 已经先放行</li><li>如果写了 L7，目标端口协议真的可被代理解析</li></ul><a href=#参考资料><h2 id=参考资料><span class=hanchor arialabel=Anchor># </span>参考资料</h2></a><ul><li><code>https://veducate.co.uk/cilium-network-policies-from-first-principles-to-production/#Safe_rollout_plan</code></li><li><code>https://docs.cilium.io/en/latest/security/policy/intro/</code></li><li><code>https://docs.cilium.io/en/stable/security/policy-creation/</code></li><li><code>https://docs.cilium.io/en/stable/security/policy/language/</code></li></ul></article><hr><div class=page-end id=footer><div class=backlinks-container><h3>反向链接</h3><ul class=backlinks><li>未发现反向链接</li></ul></div><div><script src=https://cdn.jsdelivr.net/npm/d3@6.7.0/dist/d3.min.js integrity="sha256-+7jaYCp29O1JusNWHaYtgUn6EhuP0VaFuswhNV06MyI=" crossorigin=anonymous></script><h3>内部链接关系图</h3><div id=graph-container></div><style>:root{--g-node:var(--secondary);--g-node-active:var(--primary);--g-node-inactive:var(--visited);--g-link:var(--outlinegray);--g-link-active:#5a7282}</style><script src=https://www.ryken.cloud/js/graph.abd4bc2af3869a96524d7d23b76152c7.js></script></div></div><hr><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css><script src=https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js></script><script src=alittlejs/md5.min.js></script><div id=gitalk-container></div><script>var gitalk=new Gitalk({clientID:"d21f4afcd185c95004e0",clientSecret:"8f1f442abf93a76461783af21c544717da9fc7b3",repo:"obsidian-publish",owner:"renyunkang",admin:["renyunkang"],id:location.href,distractionFreeMode:!1});gitalk.render("gitalk-container")</script><center><script>var caution=!1,now,visits;function setCookie(e,t,n,s,o,a){var i=e+"="+escape(t)+(n?"; expires="+n.toGMTString():"")+(s?"; path="+s:"")+(o?"; domain="+o:"")+(a?"; secure":"");!caution||(e+"="+escape(t)).length<=4e3?document.cookie=i:confirm("Cookie exceeds 4KB and will be cut!")&&(document.cookie=i)}function getCookie(s){var e=s+"=",n,t=document.cookie.indexOf(e);return t==-1?null:(n=document.cookie.indexOf(";",t+e.length),n==-1&&(n=document.cookie.length),unescape(document.cookie.substring(t+e.length,n)))}function deleteCookie(e,t,n){getCookie(e)&&(document.cookie=e+"="+(t?"; path="+t:"")+(n?"; domain="+n:"")+"; expires=Thu, 01-Jan-70 00:00:01 GMT")}function fixDate(e){var n=new Date(0),t=n.getTime();t>0&&e.setTime(e.getTime()-t)}now=new Date,fixDate(now),now.setTime(now.getTime()+730*24*60*60*1e3),visits=getCookie("counter"),visits?visits=parseInt(visits)+1:visits=1,setCookie("counter",visits,now),document.write("<font size=2>👋访问量："+visits+"")</script></center></div></body></html>
